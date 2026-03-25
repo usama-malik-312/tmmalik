@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button, Form, Input, Modal, Popconfirm, Space, Table, Typography } from "antd";
+import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
+import { Button, Form, Input, Modal, Popconfirm, Space, Table, Tooltip, Typography } from "antd";
 import { useState } from "react";
 import { api, unwrap } from "../api";
 import { useI18n } from "../contexts/I18nContext";
+import CnicInput from "../components/CnicInput";
 import type { Client } from "../types";
 
 export default function ClientsPage() {
@@ -36,15 +38,40 @@ export default function ClientsPage() {
         { title: "Phone", dataIndex: "phone" },
         { title: "Actions", render: (_, record: Client) => (
           <Space>
-            <Button onClick={() => { setEditing(record); form.setFieldsValue(record); setOpen(true); }}>Edit</Button>
-            <Popconfirm title="Delete client?" onConfirm={() => deleteMutation.mutate(record.id)}><Button danger>Delete</Button></Popconfirm>
+            <Tooltip title="Edit">
+              <EditOutlined
+                style={{ fontSize: 16, color: "#6366f1", cursor: "pointer" }}
+                onClick={() => {
+                  setEditing(record);
+                  form.setFieldsValue(record);
+                  setOpen(true);
+                }}
+              />
+            </Tooltip>
+            <Popconfirm title="Delete client?" onConfirm={() => deleteMutation.mutate(record.id)}>
+              <Tooltip title="Delete">
+                <DeleteOutlined style={{ fontSize: 16, color: "#ef4444", cursor: "pointer" }} />
+              </Tooltip>
+            </Popconfirm>
           </Space>
         ) }
       ]} />
       <Modal title={editing ? "Edit Client" : "Add Client"} open={open} onCancel={() => { setOpen(false); setEditing(null); form.resetFields(); }} onOk={onSubmit}>
         <Form form={form} layout="vertical">
           <Form.Item name="name" label={t("fullName")} rules={[{ required: true }]}><Input /></Form.Item>
-          <Form.Item name="cnic" label={t("cnicNumber")} rules={[{ required: true }]}><Input /></Form.Item>
+          <Form.Item
+            name="cnic"
+            label={t("cnicNumber")}
+            rules={[
+              { required: true, message: "CNIC is required" },
+              {
+                pattern: /^\d{5}-\d{7}-\d$/,
+                message: "CNIC must be in format 11111-1111111-1",
+              },
+            ]}
+          >
+            <CnicInput placeholder="11111-1111111-1" />
+          </Form.Item>
           <Form.Item name="phone" label="Phone" rules={[{ required: true }]}><Input /></Form.Item>
           <Form.Item name="address" label={t("address")} rules={[{ required: true }]}><Input /></Form.Item>
           <Form.Item name="notes" label="Notes"><Input.TextArea rows={3} /></Form.Item>

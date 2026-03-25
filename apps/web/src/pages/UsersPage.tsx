@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button, Form, Input, Modal, Popconfirm, Select, Space, Table, Typography } from "antd";
+import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
+import { Button, Form, Input, Modal, Popconfirm, Select, Space, Table, Tooltip, Typography } from "antd";
 import { useState } from "react";
 import { api, unwrap } from "../api";
 import type { User } from "../types";
@@ -71,18 +72,21 @@ export default function UsersPage() {
             title: "Actions",
             render: (_, u: User) => (
               <Space>
-                <Button
-                  onClick={() => {
-                    setEditing(u);
-                    form.setFieldsValue({ ...u, password: "" });
-                    setOpen(true);
-                  }}
-                >
-                  Edit
-                </Button>
                 <Popconfirm title="Delete user?" onConfirm={() => deleteMutation.mutate(u.id)}>
-                  <Button danger>Delete</Button>
+                  <Tooltip title="Delete">
+                    <DeleteOutlined style={{ fontSize: 16, color: "#ef4444", cursor: "pointer" }} />
+                  </Tooltip>
                 </Popconfirm>
+                <Tooltip title="Edit">
+                  <EditOutlined
+                    style={{ fontSize: 16, color: "#6366f1", cursor: "pointer" }}
+                    onClick={() => {
+                      setEditing(u);
+                      form.setFieldsValue({ ...u, password: "" });
+                      setOpen(true);
+                    }}
+                  />
+                </Tooltip>
               </Space>
             ),
           },

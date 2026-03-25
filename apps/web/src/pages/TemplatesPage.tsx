@@ -1,6 +1,6 @@
 import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button, Card, Form, Input, Modal, Popconfirm, Select, Space, Table, Typography, message } from "antd";
+import { Button, Card, Form, Input, Modal, Popconfirm, Select, Space, Table, Tooltip, Typography, message } from "antd";
 import { useEffect, useState } from "react";
 import { api, unwrap } from "../api";
 import type { Template, TemplateField } from "../types";
@@ -226,13 +226,17 @@ export default function TemplatesPage() {
               width: 140,
               render: (_, r: Template) => (
                 <Space>
-                  <Button type="text" icon={<EditOutlined />} onClick={() => openEdit(r)} aria-label="Edit" />
+                  <Tooltip title="Edit">
+                    <EditOutlined style={{ fontSize: 16, color: "#6366f1", cursor: "pointer" }} onClick={() => openEdit(r)} />
+                  </Tooltip>
                   <Popconfirm
                     title="Delete template?"
                     description="All generated documents that use this template will also be deleted."
                     onConfirm={() => deleteMutation.mutate(r.id)}
                   >
-                    <Button type="text" danger icon={<DeleteOutlined />} aria-label="Delete" />
+                    <Tooltip title="Delete">
+                      <DeleteOutlined style={{ fontSize: 16, color: "#ef4444", cursor: "pointer" }} />
+                    </Tooltip>
                   </Popconfirm>
                 </Space>
               ),

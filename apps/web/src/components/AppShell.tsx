@@ -7,13 +7,11 @@ import {
   HistoryOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
-  NotificationOutlined,
   TeamOutlined,
   UserOutlined,
 } from "@ant-design/icons";
 import {
   Avatar,
-  Badge,
   Button,
   Dropdown,
   Input,
@@ -236,7 +234,11 @@ export default function AppShell() {
         >
           <Space
             size="middle"
-            style={{ width: "100%", justifyContent: "space-between" }}
+            style={{
+              width: "100%",
+              justifyContent: dir === "rtl" ? "flex-start" : "space-between",
+              flexDirection: dir === "rtl" ? "row-reverse" : "row",
+            }}
           >
             <Space
               size="middle"
@@ -259,7 +261,12 @@ export default function AppShell() {
                 style={{ maxWidth: 420, flex: 1 }}
                 onSearch={() => {}}
               />
+            </Space>
 
+            <Space size="middle" style={{ flexShrink: 0 }}>
+              {/* <Badge count={0} size="small">
+                <Button type="text" icon={<NotificationOutlined style={{ fontSize: 18 }} />} />
+              </Badge> */}
               <Select
                 size="small"
                 value={language}
@@ -268,15 +275,9 @@ export default function AppShell() {
                   { value: "en", label: t("english") },
                   { value: "ur", label: t("urdu") },
                 ]}
-                style={{ width: 110 }}
+                style={{ width: 110, margin: "0px 10px" }}
+                className="mx-2"
               />
-            </Space>
-
-            <Space size="middle" style={{ flexShrink: 0 }}>
-              {/* <Badge count={0} size="small">
-                <Button type="text" icon={<NotificationOutlined style={{ fontSize: 18 }} />} />
-              </Badge> */}
-
               <Dropdown
                 menu={avatarMenu}
                 trigger={["hover"]}
