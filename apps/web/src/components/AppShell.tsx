@@ -11,7 +11,18 @@ import {
   TeamOutlined,
   UserOutlined,
 } from "@ant-design/icons";
-import { Avatar, Badge, Button, Dropdown, Input, Layout, Menu, Select, Space, Typography } from "antd";
+import {
+  Avatar,
+  Badge,
+  Button,
+  Dropdown,
+  Input,
+  Layout,
+  Menu,
+  Select,
+  Space,
+  Typography,
+} from "antd";
 import { useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
@@ -33,16 +44,62 @@ export default function AppShell() {
   const path = location.pathname;
 
   const mainItems = [
-    { key: "/", icon: <DashboardOutlined />, label: t("dashboard"), title: t("dashboard") },
-    { key: "/clients", icon: <TeamOutlined />, label: t("clients"), title: t("clients") },
-    { key: "/cases", icon: <FolderOpenOutlined />, label: t("cases"), title: t("cases") },
-    { key: "/documents", icon: <FileTextOutlined />, label: t("documentGenerator"), title: t("documentGenerator") },
-    { key: "/templates", icon: <FormOutlined />, label: t("templates"), title: t("templates") },
-    ...(isOwner ? [{ key: "/users", icon: <UserOutlined />, label: t("users"), title: t("users") }] : []),
-    { key: "/activity", icon: <HistoryOutlined />, label: t("activity"), title: t("activity") },
+    {
+      key: "/",
+      icon: <DashboardOutlined />,
+      label: t("dashboard"),
+      title: t("dashboard"),
+    },
+    {
+      key: "/clients",
+      icon: <TeamOutlined />,
+      label: t("clients"),
+      title: t("clients"),
+    },
+    {
+      key: "/cases",
+      icon: <FolderOpenOutlined />,
+      label: t("cases"),
+      title: t("cases"),
+    },
+    {
+      key: "/documents",
+      icon: <FileTextOutlined />,
+      label: t("documentGenerator"),
+      title: t("documentGenerator"),
+    },
+    {
+      key: "/templates",
+      icon: <FormOutlined />,
+      label: t("templates"),
+      title: t("templates"),
+    },
+    ...(isOwner
+      ? [
+          {
+            key: "/users",
+            icon: <UserOutlined />,
+            label: t("users"),
+            title: t("users"),
+          },
+        ]
+      : []),
+    {
+      key: "/activity",
+      icon: <HistoryOutlined />,
+      label: t("activity"),
+      title: t("activity"),
+    },
   ];
 
-  const bottomItems = [{ key: "/support", icon: <CustomerServiceOutlined />, label: t("support"), title: t("support") }];
+  const bottomItems = [
+    {
+      key: "/support",
+      icon: <CustomerServiceOutlined />,
+      label: t("support"),
+      title: t("support"),
+    },
+  ];
 
   const onMenuClick = ({ key }: { key: string }) => navigate(key);
 
@@ -108,10 +165,20 @@ export default function AppShell() {
           </div>
           {!collapsed && (
             <div>
-              <Typography.Text strong style={{ color: "#fff", fontSize: 15, display: "block" }}>
+              <Typography.Text
+                strong
+                style={{ color: "#fff", fontSize: 15, display: "block" }}
+              >
                 {t("appTitle")}
               </Typography.Text>
-              <Typography.Text style={{ color: "rgba(255,255,255,0.45)", fontSize: 11, textTransform: "uppercase", letterSpacing: 0.5 }}>
+              <Typography.Text
+                style={{
+                  color: "rgba(255,255,255,0.45)",
+                  fontSize: 11,
+                  textTransform: "uppercase",
+                  letterSpacing: 0.5,
+                }}
+              >
                 {t("appSubtitle")}
               </Typography.Text>
             </div>
@@ -131,7 +198,12 @@ export default function AppShell() {
           />
         </div>
 
-        <div style={{ padding: "8px 0 16px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+        <div
+          style={{
+            padding: "8px 0 16px",
+            borderTop: "1px solid rgba(255,255,255,0.06)",
+          }}
+        >
           <Menu
             theme="dark"
             mode="inline"
@@ -162,8 +234,17 @@ export default function AppShell() {
             zIndex: 10,
           }}
         >
-          <Space size="middle" style={{ width: "100%", justifyContent: "space-between" }}>
-            <Space size="middle" style={{ flex: dir === "rtl" ? undefined : 1, justifyContent: "flex-start" }}>
+          <Space
+            size="middle"
+            style={{ width: "100%", justifyContent: "space-between" }}
+          >
+            <Space
+              size="middle"
+              style={{
+                flex: dir === "rtl" ? undefined : 1,
+                justifyContent: "flex-start",
+              }}
+            >
               <Button
                 type="text"
                 icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
@@ -192,9 +273,9 @@ export default function AppShell() {
             </Space>
 
             <Space size="middle" style={{ flexShrink: 0 }}>
-              <Badge count={0} size="small">
+              {/* <Badge count={0} size="small">
                 <Button type="text" icon={<NotificationOutlined style={{ fontSize: 18 }} />} />
-              </Badge>
+              </Badge> */}
 
               <Dropdown
                 menu={avatarMenu}
@@ -202,12 +283,25 @@ export default function AppShell() {
                 placement={dropdownPlacement}
               >
                 <Space size={12} style={{ cursor: "pointer" }}>
-                  <div style={{ textAlign: dir === "rtl" ? "left" : "right", lineHeight: 1.3 }}>
-                    <Typography.Text strong style={{ display: "block", fontSize: 14 }}>
-                      {`${user?.fname ?? ""} ${user?.lname ?? ""}`.trim() || "User"}
+                  <div
+                    style={{
+                      textAlign: dir === "rtl" ? "left" : "right",
+                      lineHeight: 1.3,
+                    }}
+                  >
+                    <Typography.Text
+                      strong
+                      style={{ display: "block", fontSize: 14 }}
+                    >
+                      {`${user?.fname ?? ""} ${user?.lname ?? ""}`.trim() ||
+                        "User"}
                     </Typography.Text>
                     <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                      {user?.userType === -1 ? "Owner" : user?.userType === 1 ? "Manager" : "Staff"}
+                      {user?.userType === -1
+                        ? "Owner"
+                        : user?.userType === 1
+                          ? "Manager"
+                          : "Staff"}
                     </Typography.Text>
                   </div>
                   <Avatar style={{ background: PRIMARY }} size={40}>
@@ -219,7 +313,14 @@ export default function AppShell() {
           </Space>
         </Header>
 
-        <Content style={{ margin: 0, minHeight: 280, background: "#f8fafc", padding: 24 }}>
+        <Content
+          style={{
+            margin: 0,
+            minHeight: 280,
+            background: "#f8fafc",
+            padding: 24,
+          }}
+        >
           <Outlet />
         </Content>
       </Layout>
