@@ -66,3 +66,16 @@ model Document {
 
   @@map("documents")
 }
+
+model User {
+  id        Int      @id @default(autoincrement())
+  fname     String
+  lname     String
+  email     String   @unique
+  password  String
+  address   String
+  userType  Int
+  createdAt DateTime @default(now())
+
+  @@map("users")
+}

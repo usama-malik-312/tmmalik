@@ -48,3 +48,13 @@ export interface GeneratedDocument {
   template?: Template;
   case?: CaseItem | null;
 }
+
+export interface User {
+  id: number;
+  fname: string;
+  lname: string;
+  email: string;
+  address: string;
+  userType: -1 | 1 | 2;
+  createdAt: string;
+}

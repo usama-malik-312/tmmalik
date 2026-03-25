@@ -10,10 +10,13 @@ import {
   NotificationOutlined,
   SettingOutlined,
   TeamOutlined,
+  UserOutlined,
 } from "@ant-design/icons";
-import { Avatar, Badge, Button, Input, Layout, Menu, Space, Typography } from "antd";
+import { Avatar, Badge, Button, Input, Layout, Menu, Select, Space, Typography } from "antd";
 import { useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import { useI18n } from "../contexts/I18nContext";
 
 const { Header, Sider, Content } = Layout;
 
@@ -26,20 +29,23 @@ export default function AppShell() {
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, isOwner, logout } = useAuth();
+  const { t, language, setLanguage } = useI18n();
   const path = location.pathname;
 
   const mainItems = [
-    { key: "/", icon: <DashboardOutlined />, label: "Dashboard", title: "Dashboard" },
-    { key: "/clients", icon: <TeamOutlined />, label: "Clients", title: "Clients" },
-    { key: "/cases", icon: <FolderOpenOutlined />, label: "Cases", title: "Cases" },
-    { key: "/documents", icon: <FileTextOutlined />, label: "Document Generator", title: "Document Generator" },
-    { key: "/templates", icon: <FormOutlined />, label: "Templates", title: "Templates" },
-    { key: "/activity", icon: <HistoryOutlined />, label: "Activity", title: "Activity" },
+    { key: "/", icon: <DashboardOutlined />, label: t("dashboard"), title: t("dashboard") },
+    { key: "/clients", icon: <TeamOutlined />, label: t("clients"), title: t("clients") },
+    { key: "/cases", icon: <FolderOpenOutlined />, label: t("cases"), title: t("cases") },
+    { key: "/documents", icon: <FileTextOutlined />, label: t("documentGenerator"), title: t("documentGenerator") },
+    { key: "/templates", icon: <FormOutlined />, label: t("templates"), title: t("templates") },
+    ...(isOwner ? [{ key: "/users", icon: <UserOutlined />, label: t("users"), title: t("users") }] : []),
+    { key: "/activity", icon: <HistoryOutlined />, label: t("activity"), title: t("activity") },
   ];
 
   const bottomItems = [
-    { key: "/settings", icon: <SettingOutlined />, label: "Settings", title: "Settings" },
-    { key: "/support", icon: <CustomerServiceOutlined />, label: "Support", title: "Support" },
+    { key: "/settings", icon: <SettingOutlined />, label: t("settings"), title: t("settings") },
+    { key: "/support", icon: <CustomerServiceOutlined />, label: t("support"), title: t("support") },
   ];
 
   const onMenuClick = ({ key }: { key: string }) => navigate(key);
@@ -86,10 +92,10 @@ export default function AppShell() {
           {!collapsed && (
             <div>
               <Typography.Text strong style={{ color: "#fff", fontSize: 15, display: "block" }}>
-                The Sanctum
+                {t("appTitle")}
               </Typography.Text>
               <Typography.Text style={{ color: "rgba(255,255,255,0.45)", fontSize: 11, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                Legal &amp; Property
+                {t("appSubtitle")}
               </Typography.Text>
             </div>
           )}
@@ -145,12 +151,22 @@ export default function AppShell() {
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           />
           <Input.Search
-            placeholder="Search templates or clients..."
+            placeholder={t("searchPlaceholder")}
             allowClear
             style={{ maxWidth: 420, flex: 1 }}
             onSearch={() => {}}
           />
           <Space size="middle" style={{ marginLeft: "auto" }}>
+            <Select
+              size="small"
+              value={language}
+              onChange={(value) => setLanguage(value as "en" | "ur")}
+              options={[
+                { value: "en", label: t("english") },
+                { value: "ur", label: t("urdu") },
+              ]}
+              style={{ width: 100 }}
+            />
             <Badge count={0} size="small">
               <Button type="text" icon={<NotificationOutlined style={{ fontSize: 18 }} />} />
             </Badge>
@@ -158,16 +174,25 @@ export default function AppShell() {
             <Space size={12} style={{ cursor: "pointer" }} onClick={() => navigate("/settings")}>
               <div style={{ textAlign: "right", lineHeight: 1.3 }}>
                 <Typography.Text strong style={{ display: "block", fontSize: 14 }}>
-                  Barrister Ahmed
+                  {`${user?.fname ?? ""} ${user?.lname ?? ""}`.trim() || "User"}
                 </Typography.Text>
                 <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  Senior Associate
+                  {user?.userType === -1 ? "Owner" : user?.userType === 1 ? "Manager" : "Staff"}
                 </Typography.Text>
               </div>
               <Avatar style={{ background: PRIMARY }} size={40}>
-                BA
+                {`${user?.fname?.[0] ?? "U"}${user?.lname?.[0] ?? ""}`.toUpperCase()}
               </Avatar>
             </Space>
+            <Button
+              type="default"
+              onClick={async () => {
+                await logout();
+                navigate("/login");
+              }}
+            >
+              {t("logout")}
+            </Button>
           </Space>
         </Header>
 
