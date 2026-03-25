@@ -8,11 +8,10 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   NotificationOutlined,
-  SettingOutlined,
   TeamOutlined,
   UserOutlined,
 } from "@ant-design/icons";
-import { Avatar, Badge, Button, Input, Layout, Menu, Select, Space, Typography } from "antd";
+import { Avatar, Badge, Button, Dropdown, Input, Layout, Menu, Select, Space, Typography } from "antd";
 import { useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
@@ -30,7 +29,7 @@ export default function AppShell() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, isOwner, logout } = useAuth();
-  const { t, language, setLanguage } = useI18n();
+  const { t, language, setLanguage, dir } = useI18n();
   const path = location.pathname;
 
   const mainItems = [
@@ -43,12 +42,30 @@ export default function AppShell() {
     { key: "/activity", icon: <HistoryOutlined />, label: t("activity"), title: t("activity") },
   ];
 
-  const bottomItems = [
-    { key: "/settings", icon: <SettingOutlined />, label: t("settings"), title: t("settings") },
-    { key: "/support", icon: <CustomerServiceOutlined />, label: t("support"), title: t("support") },
-  ];
+  const bottomItems = [{ key: "/support", icon: <CustomerServiceOutlined />, label: t("support"), title: t("support") }];
 
   const onMenuClick = ({ key }: { key: string }) => navigate(key);
+
+  const avatarMenu = {
+    items: [
+      {
+        key: "profile",
+        label: t("settings"),
+        onClick: () => navigate("/profile"),
+      },
+      {
+        key: "logout",
+        label: t("logout"),
+        danger: true,
+        onClick: async () => {
+          await logout();
+          navigate("/login");
+        },
+      },
+    ],
+  };
+
+  const dropdownPlacement = dir === "rtl" ? "bottomLeft" : "bottomRight";
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
@@ -135,6 +152,8 @@ export default function AppShell() {
             background: "#fff",
             display: "flex",
             alignItems: "center",
+            justifyContent: dir === "rtl" ? "flex-start" : "space-between",
+            direction: "ltr",
             gap: 16,
             height: 64,
             borderBottom: "1px solid #e5e7eb",
@@ -143,56 +162,60 @@ export default function AppShell() {
             zIndex: 10,
           }}
         >
-          <Button
-            type="text"
-            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-            onClick={() => setCollapsed((c) => !c)}
-            style={{ fontSize: 18, width: 40, height: 40 }}
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          />
-          <Input.Search
-            placeholder={t("searchPlaceholder")}
-            allowClear
-            style={{ maxWidth: 420, flex: 1 }}
-            onSearch={() => {}}
-          />
-          <Space size="middle" style={{ marginLeft: "auto" }}>
-            <Select
-              size="small"
-              value={language}
-              onChange={(value) => setLanguage(value as "en" | "ur")}
-              options={[
-                { value: "en", label: t("english") },
-                { value: "ur", label: t("urdu") },
-              ]}
-              style={{ width: 100 }}
-            />
-            <Badge count={0} size="small">
-              <Button type="text" icon={<NotificationOutlined style={{ fontSize: 18 }} />} />
-            </Badge>
-            <Button type="text" icon={<SettingOutlined style={{ fontSize: 18 }} />} onClick={() => navigate("/settings")} />
-            <Space size={12} style={{ cursor: "pointer" }} onClick={() => navigate("/settings")}>
-              <div style={{ textAlign: "right", lineHeight: 1.3 }}>
-                <Typography.Text strong style={{ display: "block", fontSize: 14 }}>
-                  {`${user?.fname ?? ""} ${user?.lname ?? ""}`.trim() || "User"}
-                </Typography.Text>
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  {user?.userType === -1 ? "Owner" : user?.userType === 1 ? "Manager" : "Staff"}
-                </Typography.Text>
-              </div>
-              <Avatar style={{ background: PRIMARY }} size={40}>
-                {`${user?.fname?.[0] ?? "U"}${user?.lname?.[0] ?? ""}`.toUpperCase()}
-              </Avatar>
+          <Space size="middle" style={{ width: "100%", justifyContent: "space-between" }}>
+            <Space size="middle" style={{ flex: dir === "rtl" ? undefined : 1, justifyContent: "flex-start" }}>
+              <Button
+                type="text"
+                icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+                onClick={() => setCollapsed((c) => !c)}
+                style={{ fontSize: 18, width: 40, height: 40 }}
+                aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+              />
+
+              <Input.Search
+                placeholder={t("searchPlaceholder")}
+                allowClear
+                style={{ maxWidth: 420, flex: 1 }}
+                onSearch={() => {}}
+              />
+
+              <Select
+                size="small"
+                value={language}
+                onChange={(value) => setLanguage(value as "en" | "ur")}
+                options={[
+                  { value: "en", label: t("english") },
+                  { value: "ur", label: t("urdu") },
+                ]}
+                style={{ width: 110 }}
+              />
             </Space>
-            <Button
-              type="default"
-              onClick={async () => {
-                await logout();
-                navigate("/login");
-              }}
-            >
-              {t("logout")}
-            </Button>
+
+            <Space size="middle" style={{ flexShrink: 0 }}>
+              <Badge count={0} size="small">
+                <Button type="text" icon={<NotificationOutlined style={{ fontSize: 18 }} />} />
+              </Badge>
+
+              <Dropdown
+                menu={avatarMenu}
+                trigger={["hover"]}
+                placement={dropdownPlacement}
+              >
+                <Space size={12} style={{ cursor: "pointer" }}>
+                  <div style={{ textAlign: dir === "rtl" ? "left" : "right", lineHeight: 1.3 }}>
+                    <Typography.Text strong style={{ display: "block", fontSize: 14 }}>
+                      {`${user?.fname ?? ""} ${user?.lname ?? ""}`.trim() || "User"}
+                    </Typography.Text>
+                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                      {user?.userType === -1 ? "Owner" : user?.userType === 1 ? "Manager" : "Staff"}
+                    </Typography.Text>
+                  </div>
+                  <Avatar style={{ background: PRIMARY }} size={40}>
+                    {`${user?.fname?.[0] ?? "U"}${user?.lname?.[0] ?? ""}`.toUpperCase()}
+                  </Avatar>
+                </Space>
+              </Dropdown>
+            </Space>
           </Space>
         </Header>
 

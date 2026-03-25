@@ -36,6 +36,11 @@ const en: Dict = {
   english: "English",
   urdu: "Urdu",
   welcome: "Welcome",
+  save: "Save",
+  firstName: "First Name",
+  lastName: "Last Name",
+  newPassword: "New Password",
+  profileSubtitle: "View and update your profile details.",
 };
 
 const ur: Dict = {
@@ -70,6 +75,11 @@ const ur: Dict = {
   english: "انگریزی",
   urdu: "اردو",
   welcome: "خوش آمدید",
+  save: "محفوظ کریں",
+  firstName: "پہلا نام",
+  lastName: "آخری نام",
+  newPassword: "نیا پاس ورڈ",
+  profileSubtitle: "اپنی پروفائل تفصیلات دیکھیں اور اپ ڈیٹ کریں۔",
 };
 
 type I18nContextValue = {

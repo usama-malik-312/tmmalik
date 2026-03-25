@@ -9,9 +9,12 @@ api.interceptors.request.use((config) => {
   const raw = localStorage.getItem("auth_user");
   if (raw) {
     try {
-      const user = JSON.parse(raw) as { userType?: number };
+      const user = JSON.parse(raw) as { userType?: number; id?: number };
       if (user.userType !== undefined) {
         config.headers["x-user-type"] = String(user.userType);
+      }
+      if (user.id !== undefined) {
+        config.headers["x-user-id"] = String(user.id);
       }
     } catch {
       // ignore invalid local storage shape

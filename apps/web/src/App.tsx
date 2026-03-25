@@ -9,6 +9,7 @@ import LoginPage from "./pages/LoginPage";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import TemplatesPage from "./pages/TemplatesPage";
 import UsersPage from "./pages/UsersPage";
+import ProfilePage from "./pages/ProfilePage";
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -35,6 +36,7 @@ export default function App() {
         <Route path="/documents" element={<DocumentsPage />} />
         <Route path="/templates" element={<TemplatesPage />} />
         {isOwner ? <Route path="/users" element={<UsersPage />} /> : null}
+        <Route path="/profile" element={<ProfilePage />} />
         <Route
           path="/activity"
           element={<PlaceholderPage title="Activity" subtitle="Case activity and audit log will appear here in a later phase." />}
