@@ -1,0 +1,14 @@
+{
+  "name": "tmmalik",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev -w api",
+    "dev:web": "npm run dev -w web",
+    "build": "npm run build -w @tmmalik/types && npm run build -w api && npm run build -w web"
+  }
+}

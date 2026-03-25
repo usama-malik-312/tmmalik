@@ -1,0 +1,30 @@
+body {
+  margin: 0;
+  background: #f8fafc;
+  font-family:
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
+}
+
+/* Sidebar: active item — purple rail + tint (matches design) */
+.app-sidebar-menu.ant-menu-dark.ant-menu-inline .ant-menu-item-selected {
+  background: rgba(99, 102, 241, 0.2) !important;
+  border-left: 3px solid #6366f1;
+  margin-inline: 0 !important;
+  width: 100% !important;
+  border-radius: 0 8px 8px 0 !important;
+}
+
+.app-sidebar-menu.ant-menu-dark .ant-menu-item {
+  margin-block: 4px !important;
+  border-radius: 0 8px 8px 0 !important;
+}
+
+.app-sidebar-menu.ant-menu-dark .ant-menu-item:not(.ant-menu-item-selected):hover {
+  background: rgba(255, 255, 255, 0.06) !important;
+}
