@@ -11,20 +11,29 @@ body {
     sans-serif;
 }
 
-/* Sidebar: active item — purple rail + tint (matches design) */
-.app-sidebar-menu.ant-menu-dark.ant-menu-inline .ant-menu-item-selected {
-  background: rgba(99, 102, 241, 0.2) !important;
-  border-left: 3px solid #6366f1;
-  margin-inline: 0 !important;
-  width: 100% !important;
-  border-radius: 0 8px 8px 0 !important;
+/* Sidebar: stacked icons and text */
+.app-sidebar-menu.ant-menu-dark {
+  background: transparent !important;
+  border-inline-end: none !important;
 }
 
 .app-sidebar-menu.ant-menu-dark .ant-menu-item {
-  margin-block: 4px !important;
-  border-radius: 0 8px 8px 0 !important;
+  height: 80px !important;
+  margin-block: 8px !important;
+  border-radius: 8px !important;
+  padding: 8px 4px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.3s ease;
 }
 
-.app-sidebar-menu.ant-menu-dark .ant-menu-item:not(.ant-menu-item-selected):hover {
-  background: rgba(255, 255, 255, 0.06) !important;
+.app-sidebar-menu.ant-menu-dark .ant-menu-item-selected {
+  background-color: #6366f1 !important;
+  color: #fff !important;
+}
+
+.app-sidebar-menu.ant-menu-dark .ant-menu-item:hover {
+  background-color: #6366f1 !important;
+  color: #fff !important;
 }

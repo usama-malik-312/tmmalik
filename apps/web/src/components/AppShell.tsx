@@ -29,73 +29,38 @@ const { Header, Sider, Content } = Layout;
 
 const PRIMARY = "#6366f1";
 const SIDER_BG = "#0f172a";
-const SIDER_WIDTH = 268;
-const SIDER_COLLAPSED = 88;
+const SIDER_WIDTH = 100;
 
 export default function AppShell() {
-  const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { user, isOwner, logout } = useAuth();
   const { t, language, setLanguage, dir } = useI18n();
   const path = location.pathname;
 
+  const formatItem = (key: string, icon: React.ReactNode, labelStr: string) => ({
+    key,
+    label: (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, height: '100%', width: '100%' }}>
+        <div style={{ fontSize: 22 }}>{icon}</div>
+        <span style={{ fontSize: 13, lineHeight: 1, whiteSpace: 'normal', textAlign: 'center' }}>{labelStr}</span>
+      </div>
+    ),
+    title: labelStr,
+  });
+
   const mainItems = [
-    {
-      key: "/",
-      icon: <DashboardOutlined />,
-      label: t("dashboard"),
-      title: t("dashboard"),
-    },
-    {
-      key: "/clients",
-      icon: <TeamOutlined />,
-      label: t("clients"),
-      title: t("clients"),
-    },
-    {
-      key: "/cases",
-      icon: <FolderOpenOutlined />,
-      label: t("cases"),
-      title: t("cases"),
-    },
-    {
-      key: "/documents",
-      icon: <FileTextOutlined />,
-      label: t("documentGenerator"),
-      title: t("documentGenerator"),
-    },
-    {
-      key: "/templates",
-      icon: <FormOutlined />,
-      label: t("templates"),
-      title: t("templates"),
-    },
-    ...(isOwner
-      ? [
-          {
-            key: "/users",
-            icon: <UserOutlined />,
-            label: t("users"),
-            title: t("users"),
-          },
-        ]
-      : []),
-    {
-      key: "/activity",
-      icon: <HistoryOutlined />,
-      label: t("activity"),
-      title: t("activity"),
-    },
+    formatItem("/", <DashboardOutlined />, t("dashboard")),
+    formatItem("/clients", <TeamOutlined />, t("clients")),
+    formatItem("/cases", <FolderOpenOutlined />, t("cases")),
+    formatItem("/documents", <FileTextOutlined />, t("documentGenerator")),
+    formatItem("/templates", <FormOutlined />, t("templates")),
+    ...(isOwner ? [formatItem("/users", <UserOutlined />, t("users"))] : []),
+    formatItem("/activity", <HistoryOutlined />, t("activity")),
   ];
 
   const bottomItems = [
-    {
-      key: "/support",
-      icon: <CustomerServiceOutlined />,
-      label: t("support"),
-      title: t("support"),
-    },
+    formatItem("/support", <CustomerServiceOutlined />, t("support")),
   ];
 
   const onMenuClick = ({ key }: { key: string }) => navigate(key);
@@ -124,79 +89,29 @@ export default function AppShell() {
   return (
     <Layout style={{ minHeight: "100vh" }}>
       <Sider
-        collapsible
-        collapsed={collapsed}
-        onCollapse={setCollapsed}
-        trigger={null}
         width={SIDER_WIDTH}
-        collapsedWidth={SIDER_COLLAPSED}
         style={{
           background: SIDER_BG,
           display: "flex",
           flexDirection: "column",
-          borderRight: "1px solid rgba(255,255,255,0.06)",
+          borderRight: "1px solid #e5e7eb",
         }}
       >
         <div
           style={{
-            padding: collapsed ? "20px 12px" : "20px 20px 16px",
+            padding: "20px 0 16px",
             display: "flex",
             alignItems: "center",
-            justifyContent: "space-between",
-            gap: 12,
-            borderBottom: "1px solid rgba(255,255,255,0.06)",
+            justifyContent: "center",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
-            <div
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 10,
-                background: `linear-gradient(135deg, ${PRIMARY}, #8b5cf6)`,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-              }}
-            >
-              <FileTextOutlined style={{ color: "#fff", fontSize: 20 }} />
-            </div>
-            {!collapsed && (
-              <div style={{ minWidth: 0 }}>
-                <Typography.Text
-                  strong
-                  style={{ color: "#fff", fontSize: 15, display: "block" }}
-                >
-                  {t("appTitle")}
-                </Typography.Text>
-                <Typography.Text
-                  style={{
-                    color: "rgba(255,255,255,0.45)",
-                    fontSize: 11,
-                    textTransform: "uppercase",
-                    letterSpacing: 0.5,
-                  }}
-                >
-                  {t("appSubtitle")}
-                </Typography.Text>
-              </div>
-            )}
-          </div>
-          <Button
-            type="text"
-            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-            onClick={() => setCollapsed((c) => !c)}
-            style={{ color: "rgba(255,255,255,0.85)", fontSize: 18, width: 40, height: 40, flexShrink: 0 }}
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          />
+          <Typography.Text strong style={{ fontSize: 16, color: "#fff" }}>Menu</Typography.Text>
         </div>
 
-        <div style={{ flex: 1, overflow: "auto", padding: "12px 0" }}>
+        <div style={{ flex: 1, overflow: "auto", padding: "12px 8px" }}>
           <Menu
             theme="dark"
             mode="inline"
-            inlineCollapsed={collapsed}
             selectedKeys={[path]}
             items={mainItems}
             onClick={onMenuClick}
@@ -207,14 +122,13 @@ export default function AppShell() {
 
         <div
           style={{
-            padding: "8px 0 16px",
+            padding: "8px 8px 16px",
             borderTop: "1px solid rgba(255,255,255,0.06)",
           }}
         >
           <Menu
             theme="dark"
             mode="inline"
-            inlineCollapsed={collapsed}
             selectedKeys={[path]}
             items={bottomItems}
             onClick={onMenuClick}
@@ -231,7 +145,7 @@ export default function AppShell() {
             background: "#fff",
             display: "flex",
             alignItems: "center",
-            justifyContent: "flex-end",
+            justifyContent: "space-between",
             gap: 16,
             height: 64,
             borderBottom: "1px solid #e5e7eb",
@@ -240,10 +154,44 @@ export default function AppShell() {
             zIndex: 10,
           }}
         >
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 10,
+                background: `linear-gradient(135deg, ${PRIMARY}, #8b5cf6)`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <FileTextOutlined style={{ color: "#fff", fontSize: 20 }} />
+            </div>
+            <div>
+              <Typography.Text
+                strong
+                style={{ color: "#000", fontSize: 15, display: "block", lineHeight: 1.2 }}
+              >
+                {t("appTitle")}
+              </Typography.Text>
+              {/* <Typography.Text
+                style={{
+                  color: "#666",
+                  fontSize: 11,
+                  textTransform: "uppercase",
+                  letterSpacing: 0.5,
+                }}
+              >
+                {t("appSubtitle")}
+              </Typography.Text> */}
+            </div>
+          </div>
+
           <Space
             size="middle"
             style={{
-              width: "100%",
               justifyContent: "flex-end",
             }}
           >
