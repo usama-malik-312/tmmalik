@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import * as service from "../services/caseService.js";
+import { optionalQueryString, parseListQuery } from "../utils/listQuery.js";
 import { caseSchema } from "../validators/caseValidator.js";
 
 function parseId(value: string | string[] | undefined): number {
@@ -20,10 +21,22 @@ export async function createCase(req: Request, res: Response, next: NextFunction
   }
 }
 
-export async function getCases(_req: Request, res: Response, next: NextFunction) {
+export async function getCases(req: Request, res: Response, next: NextFunction) {
   try {
-    const entities = await service.getCases();
-    res.json({ success: true, data: entities });
+    const { page, pageSize, skip, search } = parseListQuery(req);
+    const status = optionalQueryString(req, "status");
+    const caseType = optionalQueryString(req, "caseType");
+    const { items, total } = await service.getCasesPaged({
+      skip,
+      take: pageSize,
+      search: search || undefined,
+      status,
+      caseType,
+    });
+    res.json({
+      success: true,
+      data: { items, total, page, pageSize },
+    });
   } catch (error) {
     next(error);
   }

@@ -2,6 +2,7 @@ import type { Prisma } from "@prisma/client";
 import { NextFunction, Request, Response } from "express";
 import * as service from "../services/templateService.js";
 import { templateSchema } from "../validators/templateValidator.js";
+import { parseListQuery } from "../utils/listQuery.js";
 
 function parseId(value: string | string[] | undefined): number {
   const id = Number(value);
@@ -25,10 +26,18 @@ export async function createTemplate(req: Request, res: Response, next: NextFunc
   }
 }
 
-export async function getTemplates(_req: Request, res: Response, next: NextFunction) {
+export async function getTemplates(req: Request, res: Response, next: NextFunction) {
   try {
-    const entities = await service.getTemplates();
-    res.json({ success: true, data: entities });
+    const { page, pageSize, skip, search } = parseListQuery(req);
+    const { items, total } = await service.getTemplatesPaged({
+      skip,
+      take: pageSize,
+      search: search || undefined,
+    });
+    res.json({
+      success: true,
+      data: { items, total, page, pageSize },
+    });
   } catch (error) {
     next(error);
   }

@@ -14,7 +14,6 @@ import {
   Avatar,
   Button,
   Dropdown,
-  Input,
   Layout,
   Menu,
   Select,
@@ -143,44 +142,54 @@ export default function AppShell() {
             padding: collapsed ? "20px 12px" : "20px 20px 16px",
             display: "flex",
             alignItems: "center",
+            justifyContent: "space-between",
             gap: 12,
             borderBottom: "1px solid rgba(255,255,255,0.06)",
           }}
         >
-          <div
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 10,
-              background: `linear-gradient(135deg, ${PRIMARY}, #8b5cf6)`,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-            }}
-          >
-            <FileTextOutlined style={{ color: "#fff", fontSize: 20 }} />
-          </div>
-          {!collapsed && (
-            <div>
-              <Typography.Text
-                strong
-                style={{ color: "#fff", fontSize: 15, display: "block" }}
-              >
-                {t("appTitle")}
-              </Typography.Text>
-              <Typography.Text
-                style={{
-                  color: "rgba(255,255,255,0.45)",
-                  fontSize: 11,
-                  textTransform: "uppercase",
-                  letterSpacing: 0.5,
-                }}
-              >
-                {t("appSubtitle")}
-              </Typography.Text>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 10,
+                background: `linear-gradient(135deg, ${PRIMARY}, #8b5cf6)`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <FileTextOutlined style={{ color: "#fff", fontSize: 20 }} />
             </div>
-          )}
+            {!collapsed && (
+              <div style={{ minWidth: 0 }}>
+                <Typography.Text
+                  strong
+                  style={{ color: "#fff", fontSize: 15, display: "block" }}
+                >
+                  {t("appTitle")}
+                </Typography.Text>
+                <Typography.Text
+                  style={{
+                    color: "rgba(255,255,255,0.45)",
+                    fontSize: 11,
+                    textTransform: "uppercase",
+                    letterSpacing: 0.5,
+                  }}
+                >
+                  {t("appSubtitle")}
+                </Typography.Text>
+              </div>
+            )}
+          </div>
+          <Button
+            type="text"
+            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+            onClick={() => setCollapsed((c) => !c)}
+            style={{ color: "rgba(255,255,255,0.85)", fontSize: 18, width: 40, height: 40, flexShrink: 0 }}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          />
         </div>
 
         <div style={{ flex: 1, overflow: "auto", padding: "12px 0" }}>
@@ -222,8 +231,7 @@ export default function AppShell() {
             background: "#fff",
             display: "flex",
             alignItems: "center",
-            justifyContent: dir === "rtl" ? "flex-start" : "space-between",
-            direction: "ltr",
+            justifyContent: "flex-end",
             gap: 16,
             height: 64,
             borderBottom: "1px solid #e5e7eb",
@@ -236,33 +244,9 @@ export default function AppShell() {
             size="middle"
             style={{
               width: "100%",
-              justifyContent: dir === "rtl" ? "flex-start" : "space-between",
-              flexDirection: dir === "rtl" ? "row-reverse" : "row",
+              justifyContent: "flex-end",
             }}
           >
-            <Space
-              size="middle"
-              style={{
-                flex: dir === "rtl" ? undefined : 1,
-                justifyContent: "flex-start",
-              }}
-            >
-              <Button
-                type="text"
-                icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-                onClick={() => setCollapsed((c) => !c)}
-                style={{ fontSize: 18, width: 40, height: 40 }}
-                aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-              />
-
-              <Input.Search
-                placeholder={t("searchPlaceholder")}
-                allowClear
-                style={{ maxWidth: 420, flex: 1 }}
-                onSearch={() => {}}
-              />
-            </Space>
-
             <Space size="middle" style={{ flexShrink: 0 }}>
               {/* <Badge count={0} size="small">
                 <Button type="text" icon={<NotificationOutlined style={{ fontSize: 18 }} />} />

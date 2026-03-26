@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import { Button, Form, Input, Modal, Popconfirm, Select, Space, Table, Tooltip, Typography } from "antd";
 import { useState } from "react";
-import { api, unwrap } from "../api";
+import { api, unwrapPaged } from "../api";
 import type { User } from "../types";
 
 type UserForm = Omit<User, "id" | "createdAt"> & { password: string };
@@ -12,10 +12,18 @@ export default function UsersPage() {
   const [editing, setEditing] = useState<User | null>(null);
   const [form] = Form.useForm<UserForm>();
   const queryClient = useQueryClient();
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [search, setSearch] = useState("");
 
   const usersQuery = useQuery({
-    queryKey: ["users"],
-    queryFn: () => unwrap<User[]>(api.get("/users")),
+    queryKey: ["users", "list", page, pageSize, search],
+    queryFn: () =>
+      unwrapPaged<User>(
+        api.get("/users", {
+          params: { page, pageSize, search: search || undefined },
+        })
+      ),
   });
 
   const createMutation = useMutation({
@@ -45,6 +53,8 @@ export default function UsersPage() {
     form.resetFields();
   };
 
+  const paged = usersQuery.data;
+
   return (
     <div>
       <Space style={{ marginBottom: 16, width: "100%", justifyContent: "space-between" }}>
@@ -56,9 +66,32 @@ export default function UsersPage() {
         </Button>
       </Space>
 
+      <Space style={{ marginBottom: 16 }}>
+        <Input.Search
+          allowClear
+          placeholder="Search name, email, address…"
+          style={{ width: 320 }}
+          onSearch={(v) => {
+            setSearch(v);
+            setPage(1);
+          }}
+        />
+      </Space>
+
       <Table
         rowKey="id"
-        dataSource={usersQuery.data ?? []}
+        loading={usersQuery.isLoading}
+        dataSource={paged?.items ?? []}
+        pagination={{
+          current: page,
+          pageSize,
+          total: paged?.total ?? 0,
+          showSizeChanger: true,
+          onChange: (p, ps) => {
+            setPage(p);
+            setPageSize(ps);
+          },
+        }}
         columns={[
           { title: "First Name", dataIndex: "fname" },
           { title: "Last Name", dataIndex: "lname" },
@@ -132,4 +165,3 @@ export default function UsersPage() {
     </div>
   );
 }
-

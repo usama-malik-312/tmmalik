@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import * as service from "../services/userService.js";
+import { parseListQuery } from "../utils/listQuery.js";
 import { userSchema } from "../validators/userValidator.js";
 
 function parseId(value: string | string[] | undefined): number {
@@ -25,10 +26,18 @@ export async function createUser(req: Request, res: Response, next: NextFunction
   }
 }
 
-export async function getUsers(_req: Request, res: Response, next: NextFunction) {
+export async function getUsers(req: Request, res: Response, next: NextFunction) {
   try {
-    const users = await service.getUsers();
-    res.json({ success: true, data: users.map(stripPassword) });
+    const { page, pageSize, skip, search } = parseListQuery(req);
+    const { items, total } = await service.getUsersPaged({
+      skip,
+      take: pageSize,
+      search: search || undefined,
+    });
+    res.json({
+      success: true,
+      data: { items: items.map(stripPassword), total, page, pageSize },
+    });
   } catch (error) {
     next(error);
   }

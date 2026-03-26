@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import * as service from "../services/clientService.js";
+import { optionalQueryString, parseListQuery } from "../utils/listQuery.js";
 import { clientSchema } from "../validators/clientValidator.js";
 
 function parseId(value: string | string[] | undefined): number {
@@ -20,10 +21,24 @@ export async function createClient(req: Request, res: Response, next: NextFuncti
   }
 }
 
-export async function getClients(_req: Request, res: Response, next: NextFunction) {
+export async function getClients(req: Request, res: Response, next: NextFunction) {
   try {
-    const clients = await service.getClients();
-    res.json({ success: true, data: clients });
+    const { page, pageSize, skip, search } = parseListQuery(req);
+    const name = optionalQueryString(req, "name");
+    const cnic = optionalQueryString(req, "cnic");
+    const phone = optionalQueryString(req, "phone");
+    const { items, total } = await service.getClientsPaged({
+      skip,
+      take: pageSize,
+      search: search || undefined,
+      name,
+      cnic,
+      phone,
+    });
+    res.json({
+      success: true,
+      data: { items, total, page, pageSize },
+    });
   } catch (error) {
     next(error);
   }

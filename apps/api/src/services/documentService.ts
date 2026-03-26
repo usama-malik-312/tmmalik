@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "../config/prisma.js";
 
 function replacePlaceholders(input: string, map: Record<string, string>) {
@@ -11,6 +12,8 @@ type GenerateArgs = {
   templateId: number;
   caseId?: number | null;
   formData: Record<string, string>;
+  /** If set, used instead of the stored template body (one-off edits in Document Generator). */
+  contentOverride?: string | null;
 };
 
 export async function generateDocument(args: GenerateArgs) {
@@ -26,7 +29,11 @@ export async function generateDocument(args: GenerateArgs) {
     }
   }
 
-  const generatedContent = replacePlaceholders(template.content, args.formData);
+  const source =
+    typeof args.contentOverride === "string" && args.contentOverride.trim().length > 0
+      ? args.contentOverride
+      : template.content;
+  const generatedContent = replacePlaceholders(source, args.formData);
 
   return prisma.document.create({
     data: {
@@ -39,6 +46,37 @@ export async function generateDocument(args: GenerateArgs) {
       case: { include: { client: true } },
     },
   });
+}
+
+export type DocumentListParams = {
+  skip: number;
+  take: number;
+  search?: string;
+};
+
+export async function getDocumentsPaged(params: DocumentListParams) {
+  const where: Prisma.DocumentWhereInput | undefined = params.search
+    ? {
+        OR: [
+          { generatedContent: { contains: params.search, mode: "insensitive" } },
+          { template: { name: { contains: params.search, mode: "insensitive" } } },
+        ],
+      }
+    : undefined;
+  const [items, total] = await Promise.all([
+    prisma.document.findMany({
+      where,
+      include: {
+        template: true,
+        case: { include: { client: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      skip: params.skip,
+      take: params.take,
+    }),
+    prisma.document.count({ where }),
+  ]);
+  return { items, total };
 }
 
 export const getDocuments = () =>

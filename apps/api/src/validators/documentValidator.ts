@@ -18,6 +18,8 @@ function stringifyFormData(record: Record<string, unknown>): Record<string, stri
 export const generateDocumentSchema = z.object({
   templateId: z.coerce.number().int().positive(),
   caseId: z.coerce.number().int().positive().optional().nullable(),
+  /** Optional full template body for this generation only (does not update DB template). */
+  contentOverride: z.string().optional().nullable(),
   formData: z
     .record(z.string(), z.unknown())
     .optional()

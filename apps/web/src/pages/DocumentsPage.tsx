@@ -1,4 +1,4 @@
-import { FileTextOutlined, ThunderboltOutlined } from "@ant-design/icons";
+import { EyeOutlined, FileTextOutlined, ThunderboltOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Button,
@@ -8,6 +8,7 @@ import {
   Form,
   Input,
   message,
+  Modal,
   Row,
   Select,
   Space,
@@ -15,8 +16,8 @@ import {
   Tabs,
   Typography,
 } from "antd";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { api, unwrap } from "../api";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { api, unwrapPaged } from "../api";
 import type { CaseItem, Client, GeneratedDocument, Template, TemplateField } from "../types";
 
 function parseTemplateFields(raw: unknown): TemplateField[] {
@@ -103,36 +104,48 @@ function renderPreviewContent(content: string, values: Record<string, string>) {
 export default function DocumentsPage() {
   const queryClient = useQueryClient();
   const [form] = Form.useForm();
-  const printRef = useRef<HTMLDivElement>(null);
   const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null);
   const [previewScale, setPreviewScale] = useState(1);
+  const [draftContent, setDraftContent] = useState<string>("");
+  const [templateSearch, setTemplateSearch] = useState("");
+  const [docPage, setDocPage] = useState(1);
+  const [docPageSize, setDocPageSize] = useState(10);
+  const [docSearch, setDocSearch] = useState("");
+  const [viewDoc, setViewDoc] = useState<GeneratedDocument | null>(null);
 
   const templatesQuery = useQuery({
-    queryKey: ["templates"],
+    queryKey: ["templates", "docgen"],
     queryFn: async () => {
-      const list = await unwrap<Template[]>(api.get("/templates"));
-      return list.map((t) => normalizeTemplate(t as Template & { fields?: unknown }));
+      const p = await unwrapPaged<Template>(api.get("/templates", { params: { page: 1, pageSize: 500 } }));
+      return p.items.map((t) => normalizeTemplate(t as Template & { fields?: unknown }));
     },
   });
 
   const clientsQuery = useQuery({
-    queryKey: ["clients"],
-    queryFn: () => unwrap<Client[]>(api.get("/clients")),
+    queryKey: ["clients", "picker"],
+    queryFn: () => unwrapPaged<Client>(api.get("/clients", { params: { page: 1, pageSize: 500 } })),
   });
 
   const casesQuery = useQuery({
-    queryKey: ["cases"],
-    queryFn: () => unwrap<CaseItem[]>(api.get("/cases")),
+    queryKey: ["cases", "picker"],
+    queryFn: () => unwrapPaged<CaseItem>(api.get("/cases", { params: { page: 1, pageSize: 500 } })),
   });
 
   const documentsQuery = useQuery({
-    queryKey: ["documents"],
-    queryFn: () => unwrap<GeneratedDocument[]>(api.get("/documents")),
+    queryKey: ["documents", "list", docPage, docPageSize, docSearch],
+    queryFn: () =>
+      unwrapPaged<GeneratedDocument>(
+        api.get("/documents", { params: { page: docPage, pageSize: docPageSize, search: docSearch || undefined } })
+      ),
   });
 
   const generateMutation = useMutation({
-    mutationFn: (payload: { templateId: number; caseId?: number | null; formData: Record<string, string> }) =>
-      api.post("/documents/generate", payload),
+    mutationFn: (payload: {
+      templateId: number;
+      caseId?: number | null;
+      formData: Record<string, string>;
+      contentOverride?: string;
+    }) => api.post("/documents/generate", payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["documents"] });
       message.success("Document generated and saved.");
@@ -144,6 +157,17 @@ export default function DocumentsPage() {
   });
 
   const templates = templatesQuery.data ?? [];
+  const filteredTemplates = useMemo(() => {
+    const q = templateSearch.trim();
+    if (!q) return templates;
+    return templates.filter(
+      (t) =>
+        t.name.includes(q) ||
+        t.content.includes(q) ||
+        (t.fields ?? []).some((f) => f.label.includes(q) || f.name.includes(q))
+    );
+  }, [templates, templateSearch]);
+
   const selectedTemplate = useMemo(
     () => templates.find((t) => t.id === selectedTemplateId) ?? null,
     [templates, selectedTemplateId]
@@ -159,6 +183,14 @@ export default function DocumentsPage() {
   useEffect(() => {
     form.resetFields();
   }, [selectedTemplateId, form]);
+
+  useEffect(() => {
+    if (selectedTemplate) {
+      setDraftContent(selectedTemplate.content);
+    } else {
+      setDraftContent("");
+    }
+  }, [selectedTemplateId, selectedTemplate?.content]);
 
   const watched = Form.useWatch([], form) as Record<string, unknown> | undefined;
   const previewValues = useMemo(() => {
@@ -178,7 +210,7 @@ export default function DocumentsPage() {
 
   const handleClientSelect = (clientId: number | null) => {
     if (clientId == null) return;
-    const client = (clientsQuery.data ?? []).find((c) => c.id === clientId);
+    const client = (clientsQuery.data?.items ?? []).find((c) => c.id === clientId);
     if (!client) return;
     form.setFieldsValue({
       client_name: client.name,
@@ -190,6 +222,7 @@ export default function DocumentsPage() {
   const resetAll = () => {
     form.resetFields();
     setPreviewScale(1);
+    if (selectedTemplate) setDraftContent(selectedTemplate.content);
     message.info("Form reset.");
   };
 
@@ -208,14 +241,14 @@ export default function DocumentsPage() {
       formData[f.name] = formatted ?? (raw === undefined || raw === null ? "" : String(raw));
     }
     const linked = values.linkedCaseId;
-    const caseId =
-      linked === undefined || linked === null || linked === ""
-        ? null
-        : Number(linked);
+    const caseId = linked === undefined || linked === null || linked === "" ? null : Number(linked);
+    const contentOverride =
+      draftContent.trim() !== selectedTemplate.content.trim() ? draftContent : undefined;
     await generateMutation.mutateAsync({
       templateId: selectedTemplate.id,
       caseId: Number.isFinite(caseId) ? caseId : null,
       formData,
+      contentOverride,
     });
   };
 
@@ -223,13 +256,15 @@ export default function DocumentsPage() {
 
   const renderFieldInput = (f: TemplateField) => {
     if (f.input === "textarea") {
-      return <Input.TextArea rows={4} placeholder={f.label} />;
+      return <Input.TextArea rows={4} placeholder={f.label} dir="auto" />;
     }
     if (f.input === "date") {
       return <DatePicker style={{ width: "100%" }} format="MM/DD/YYYY" />;
     }
-    return <Input placeholder={f.label} />;
+    return <Input placeholder={f.label} dir="auto" />;
   };
+
+  const previewBody = draftContent;
 
   const generator = (
     <Row gutter={[24, 24]}>
@@ -251,8 +286,14 @@ export default function DocumentsPage() {
           <Typography.Title level={5} style={{ marginTop: 0 }}>
             1. Select template
           </Typography.Title>
+          <Input.Search
+            allowClear
+            placeholder="Search templates by name or text…"
+            style={{ marginBottom: 12 }}
+            onChange={(e) => setTemplateSearch(e.target.value)}
+          />
           <Row gutter={[12, 12]}>
-            {templates.map((t) => {
+            {filteredTemplates.map((t) => {
               const active = t.id === selectedTemplateId;
               const sub = templateSubtitle(t.name);
               return (
@@ -292,7 +333,22 @@ export default function DocumentsPage() {
             <Typography.Paragraph type="secondary">Loading templates…</Typography.Paragraph>
           ) : (
             <Form form={form} layout="vertical" style={{ marginTop: 24 }}>
-              <Typography.Title level={5}>2. {SECTION_LABEL.client}</Typography.Title>
+              <Typography.Title level={5}>Document text (optional edits)</Typography.Title>
+              <Typography.Paragraph type="secondary" style={{ marginTop: -8, fontSize: 13 }}>
+                Adjust wording for this run only — the saved template in the library is unchanged. Use the same{" "}
+                <code>{"{{placeholders}}"}</code> as in the template.
+              </Typography.Paragraph>
+              <Input.TextArea
+                rows={8}
+                value={draftContent}
+                onChange={(e) => setDraftContent(e.target.value)}
+                dir="auto"
+                style={{ fontFamily: "inherit" }}
+              />
+
+              <Typography.Title level={5} style={{ marginTop: 16 }}>
+                2. {SECTION_LABEL.client}
+              </Typography.Title>
               <Typography.Link style={{ display: "block", marginBottom: 12, color: PRIMARY }}>
                 Find existing client — select below to auto-fill
               </Typography.Link>
@@ -302,7 +358,7 @@ export default function DocumentsPage() {
                   showSearch
                   placeholder="Search by name or CNIC"
                   optionFilterProp="label"
-                  options={(clientsQuery.data ?? []).map((c) => ({
+                  options={(clientsQuery.data?.items ?? []).map((c) => ({
                     value: c.id,
                     label: `${c.name} — ${c.cnic}`,
                   }))}
@@ -362,7 +418,7 @@ export default function DocumentsPage() {
                 <Select
                   allowClear
                   placeholder="Optional — associate with a case"
-                  options={(casesQuery.data ?? []).map((c) => ({
+                  options={(casesQuery.data?.items ?? []).map((c) => ({
                     value: c.id,
                     label: `Case #${c.id} — ${c.client?.name ?? "Unknown"} (${c.caseType})`,
                   }))}
@@ -428,14 +484,13 @@ export default function DocumentsPage() {
             </span>
           </div>
           <div
-            ref={printRef}
             id="legal-doc-print-root"
             className="legal-doc-print-outer"
             style={{
               background: "#f0f0f0",
               padding: 24,
               borderRadius: 8,
-              minHeight: 640,
+              minHeight: 320,
               overflow: "hidden",
             }}
           >
@@ -456,14 +511,16 @@ export default function DocumentsPage() {
                   margin: "0 auto",
                   background: "#fff",
                   padding: "48px 56px",
-                  minHeight: 720,
+                  minHeight: 400,
                   boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
-                  fontFamily: '"Times New Roman", Times, serif',
+                  fontFamily: '"Times New Roman", Times, "Noto Naskh Arabic", "Segoe UI", serif',
                   fontSize: 15,
                   lineHeight: 1.65,
                   color: "#1a1a1a",
                   boxSizing: "border-box",
                   overflow: "hidden",
+                  direction: "ltr",
+                  textAlign: "left",
                 }}
               >
                 {selectedTemplate ? (
@@ -475,9 +532,10 @@ export default function DocumentsPage() {
                       wordBreak: "break-word",
                       maxWidth: "100%",
                       overflowX: "hidden",
+                      unicodeBidi: "plaintext",
                     }}
                   >
-                    {renderPreviewContent(selectedTemplate.content, previewValues)}
+                    {renderPreviewContent(previewBody, previewValues)}
                   </div>
                 ) : (
                   <Typography.Paragraph type="secondary">Select a template to preview.</Typography.Paragraph>
@@ -490,6 +548,8 @@ export default function DocumentsPage() {
     </Row>
   );
 
+  const docPaged = documentsQuery.data;
+
   return (
     <>
       <style>{`
@@ -499,14 +559,16 @@ export default function DocumentsPage() {
         }
         @media print {
           @page {
-            margin: 16mm 14mm;
-            size: auto;
+            margin: 12mm 14mm;
+            size: A4 portrait;
           }
           html, body {
             height: auto !important;
             margin: 0 !important;
             padding: 0 !important;
             background: #fff !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
           }
           body * {
             visibility: hidden !important;
@@ -519,9 +581,10 @@ export default function DocumentsPage() {
             display: none !important;
           }
           #legal-doc-print-root.legal-doc-print-outer {
-            position: static !important;
-            left: auto !important;
-            top: auto !important;
+            position: fixed !important;
+            left: 0 !important;
+            top: 0 !important;
+            right: 0 !important;
             width: 100% !important;
             max-width: 100% !important;
             min-height: 0 !important;
@@ -531,20 +594,22 @@ export default function DocumentsPage() {
             border-radius: 0 !important;
             overflow: visible !important;
             box-shadow: none !important;
+            z-index: 99999 !important;
           }
           #legal-doc-print-root .legal-doc-scale-wrap {
             transform: none !important;
-            margin: 0 !important;
+            margin: 0 auto !important;
             max-width: 100% !important;
+            width: 100% !important;
           }
           #legal-doc-print-root .legal-doc-paper-inner {
             max-width: 100% !important;
             width: 100% !important;
-            margin: 0 !important;
-            padding: 12mm 10mm !important;
+            margin: 0 auto !important;
+            padding: 0 !important;
             min-height: 0 !important;
             box-shadow: none !important;
-            page-break-inside: avoid;
+            page-break-inside: auto;
           }
           #legal-doc-print-root .legal-doc-body {
             white-space: pre-wrap !important;
@@ -562,26 +627,82 @@ export default function DocumentsPage() {
             key: "history",
             label: "Generated documents",
             children: (
-              <Table
-                rowKey="id"
-                dataSource={documentsQuery.data ?? []}
-                columns={[
-                  { title: "Template", render: (_, r: GeneratedDocument) => r.template?.name ?? "—" },
-                  { title: "Case", render: (_, r: GeneratedDocument) => (r.caseId != null ? `#${r.caseId}` : "—") },
-                  {
-                    title: "Preview",
-                    render: (_, r: GeneratedDocument) => (
-                      <Typography.Paragraph ellipsis={{ rows: 2, expandable: true }} style={{ maxWidth: 360 }}>
-                        {r.generatedContent}
-                      </Typography.Paragraph>
-                    ),
-                  },
-                  {
-                    title: "Created",
-                    render: (_, r: GeneratedDocument) => new Date(r.createdAt).toLocaleString(),
-                  },
-                ]}
-              />
+              <>
+                <Space style={{ marginBottom: 16 }}>
+                  <Input.Search
+                    allowClear
+                    placeholder="Search documents or template name…"
+                    style={{ width: 360 }}
+                    onSearch={(v) => {
+                      setDocSearch(v);
+                      setDocPage(1);
+                    }}
+                  />
+                </Space>
+                <Table
+                  rowKey="id"
+                  loading={documentsQuery.isLoading}
+                  dataSource={docPaged?.items ?? []}
+                  pagination={{
+                    current: docPage,
+                    pageSize: docPageSize,
+                    total: docPaged?.total ?? 0,
+                    showSizeChanger: true,
+                    onChange: (p, ps) => {
+                      setDocPage(p);
+                      setDocPageSize(ps);
+                    },
+                  }}
+                  columns={[
+                    { title: "Template", render: (_, r: GeneratedDocument) => r.template?.name ?? "—" },
+                    { title: "Case", render: (_, r: GeneratedDocument) => (r.caseId != null ? `#${r.caseId}` : "—") },
+                    {
+                      title: "Preview",
+                      render: (_, r: GeneratedDocument) => (
+                        <Typography.Paragraph ellipsis={{ rows: 2 }} style={{ maxWidth: 280, margin: 0 }}>
+                          {r.generatedContent}
+                        </Typography.Paragraph>
+                      ),
+                    },
+                    {
+                      title: "Actions",
+                      width: 100,
+                      render: (_, r: GeneratedDocument) => (
+                        <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => setViewDoc(r)}>
+                          View
+                        </Button>
+                      ),
+                    },
+                    {
+                      title: "Created",
+                      render: (_, r: GeneratedDocument) => new Date(r.createdAt).toLocaleString(),
+                    },
+                  ]}
+                />
+                <Modal
+                  title={viewDoc ? `Document — ${viewDoc.template?.name ?? "Generated"}` : "Document"}
+                  open={viewDoc != null}
+                  footer={null}
+                  width={720}
+                  onCancel={() => setViewDoc(null)}
+                  destroyOnClose
+                >
+                  {viewDoc ? (
+                    <Typography.Paragraph
+                      style={{
+                        whiteSpace: "pre-wrap",
+                        wordBreak: "break-word",
+                        maxHeight: "70vh",
+                        overflow: "auto",
+                        fontFamily: '"Times New Roman", Times, serif',
+                        marginBottom: 0,
+                      }}
+                    >
+                      {viewDoc.generatedContent}
+                    </Typography.Paragraph>
+                  ) : null}
+                </Modal>
+              </>
             ),
           },
         ]}

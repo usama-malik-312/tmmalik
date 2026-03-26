@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import * as service from "../services/documentService.js";
+import { parseListQuery } from "../utils/listQuery.js";
 import { generateDocumentSchema } from "../validators/documentValidator.js";
 
 function parseId(value: string | string[] | undefined): number {
@@ -20,10 +21,18 @@ export async function generateDocument(req: Request, res: Response, next: NextFu
   }
 }
 
-export async function getDocuments(_req: Request, res: Response, next: NextFunction) {
+export async function getDocuments(req: Request, res: Response, next: NextFunction) {
   try {
-    const entities = await service.getDocuments();
-    res.json({ success: true, data: entities });
+    const { page, pageSize, skip, search } = parseListQuery(req);
+    const { items, total } = await service.getDocumentsPaged({
+      skip,
+      take: pageSize,
+      search: search || undefined,
+    });
+    res.json({
+      success: true,
+      data: { items, total, page, pageSize },
+    });
   } catch (error) {
     next(error);
   }

@@ -27,3 +27,10 @@ export async function unwrap<T>(promise: Promise<{ data: { data: T } }>): Promis
   const response = await promise;
   return response.data.data;
 }
+
+export type Paged<T> = { items: T[]; total: number; page: number; pageSize: number };
+
+export async function unwrapPaged<T>(promise: Promise<{ data: { data: Paged<T> } }>): Promise<Paged<T>> {
+  const response = await promise;
+  return response.data.data;
+}
