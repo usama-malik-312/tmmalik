@@ -50,3 +50,27 @@ export async function getDocumentById(req: Request, res: Response, next: NextFun
     next(error);
   }
 }
+
+export async function updateDocument(req: Request, res: Response, next: NextFunction) {
+  try {
+    const id = parseId(req.params.id);
+    const generatedContent = String(req.body?.generatedContent ?? "").trim();
+    if (!generatedContent) {
+      res.status(400).json({ success: false, message: "generatedContent is required" });
+      return;
+    }
+    const entity = await service.updateDocument(id, { generatedContent });
+    res.json({ success: true, data: entity });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function deleteDocument(req: Request, res: Response, next: NextFunction) {
+  try {
+    await service.deleteDocument(parseId(req.params.id));
+    res.json({ success: true, message: "Document deleted" });
+  } catch (error) {
+    next(error);
+  }
+}

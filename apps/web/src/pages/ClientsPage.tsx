@@ -77,9 +77,11 @@ export default function ClientsPage() {
 
       <Space wrap style={{ marginBottom: 16, width: "100%" }}>
         <Input.Search
+          value={search}
           allowClear
           placeholder={t("searchPlaceholder")}
           style={{ width: 260 }}
+          onChange={(e) => setSearch(e.target.value)}
           onSearch={(v) => {
             setSearch(v);
             setPage(1);
@@ -128,6 +130,20 @@ export default function ClientsPage() {
           }}
         >
           Apply
+        </Button>
+        <Button
+          onClick={() => {
+            setSearch("");
+            setDraftName("");
+            setDraftCnic("");
+            setDraftPhone("");
+            setAppliedName("");
+            setAppliedCnic("");
+            setAppliedPhone("");
+            setPage(1);
+          }}
+        >
+          Clear Filters
         </Button>
       </Space>
 

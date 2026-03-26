@@ -1,14 +1,16 @@
-import { EyeOutlined, FileTextOutlined, ThunderboltOutlined } from "@ant-design/icons";
+import { DeleteOutlined, EditOutlined, EyeOutlined, FileTextOutlined, MoreOutlined, PrinterOutlined, ThunderboltOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Button,
   Card,
   Col,
   DatePicker,
+  Dropdown,
   Form,
   Input,
   message,
   Modal,
+  type MenuProps,
   Row,
   Select,
   Space,
@@ -105,6 +107,7 @@ export default function DocumentsPage() {
   const queryClient = useQueryClient();
   const [form] = Form.useForm();
   const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState("generator");
   const [previewScale, setPreviewScale] = useState(1);
   const [draftContent, setDraftContent] = useState<string>("");
   const [templateSearch, setTemplateSearch] = useState("");
@@ -112,6 +115,7 @@ export default function DocumentsPage() {
   const [docPageSize, setDocPageSize] = useState(10);
   const [docSearch, setDocSearch] = useState("");
   const [viewDoc, setViewDoc] = useState<GeneratedDocument | null>(null);
+  const [editingDocId, setEditingDocId] = useState<number | null>(null);
 
   const templatesQuery = useQuery({
     queryKey: ["templates", "docgen"],
@@ -156,41 +160,45 @@ export default function DocumentsPage() {
     },
   });
 
-  const templates = templatesQuery.data ?? [];
+  const updateMutation = useMutation({
+    mutationFn: ({ id, generatedContent }: { id: number; generatedContent: string }) =>
+      api.put(`/documents/${id}`, { generatedContent }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["documents"] });
+      message.success("Document updated.");
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => api.delete(`/documents/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["documents"] });
+      if (editingDocId != null) setEditingDocId(null);
+      message.success("Document deleted.");
+    },
+  });
+
+  const templates = useMemo(() => templatesQuery.data ?? [], [templatesQuery.data]);
   const filteredTemplates = useMemo(() => {
-    const q = templateSearch.trim();
+    const q = templateSearch.trim().toLocaleLowerCase();
     if (!q) return templates;
     return templates.filter(
       (t) =>
-        t.name.includes(q) ||
-        t.content.includes(q) ||
-        (t.fields ?? []).some((f) => f.label.includes(q) || f.name.includes(q))
+        t.name.toLocaleLowerCase().includes(q) ||
+        t.content.toLocaleLowerCase().includes(q) ||
+        (t.fields ?? []).some((f) => f.label.toLocaleLowerCase().includes(q) || f.name.toLocaleLowerCase().includes(q))
     );
   }, [templates, templateSearch]);
 
+  const effectiveTemplateId = selectedTemplateId ?? templates[0]?.id ?? null;
   const selectedTemplate = useMemo(
-    () => templates.find((t) => t.id === selectedTemplateId) ?? null,
-    [templates, selectedTemplateId]
+    () => templates.find((t) => t.id === effectiveTemplateId) ?? null,
+    [templates, effectiveTemplateId]
   );
-
-  useEffect(() => {
-    if (!templates.length) return;
-    if (selectedTemplateId == null || !templates.some((t) => t.id === selectedTemplateId)) {
-      setSelectedTemplateId(templates[0].id);
-    }
-  }, [templates, selectedTemplateId]);
 
   useEffect(() => {
     form.resetFields();
   }, [selectedTemplateId, form]);
-
-  useEffect(() => {
-    if (selectedTemplate) {
-      setDraftContent(selectedTemplate.content);
-    } else {
-      setDraftContent("");
-    }
-  }, [selectedTemplateId, selectedTemplate?.content]);
 
   const watched = Form.useWatch([], form) as Record<string, unknown> | undefined;
   const previewValues = useMemo(() => {
@@ -223,7 +231,55 @@ export default function DocumentsPage() {
     form.resetFields();
     setPreviewScale(1);
     if (selectedTemplate) setDraftContent(selectedTemplate.content);
+    setEditingDocId(null);
     message.info("Form reset.");
+  };
+
+  const isRtlText = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/.test(draftContent);
+
+  const printDocument = (content: string) => {
+    const rtl = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/.test(content);
+    const escaped = content
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\n/g, "<br />");
+    const html = `<!doctype html><html><head><meta charset="utf-8" />
+      <title>Document</title>
+      <style>
+        @page { size: A4 portrait; margin: 14mm; }
+        html, body { margin: 0; padding: 0; background: #fff; }
+        body { font-family: "Times New Roman", Times, "Noto Naskh Arabic", "Segoe UI", serif; font-size: 15px; line-height: 1.7; }
+        .doc { word-break: break-word; overflow-wrap: anywhere; direction: ${rtl ? "rtl" : "ltr"}; text-align: ${rtl ? "right" : "left"}; unicode-bidi: plaintext; }
+      </style></head><body><div class="doc">${escaped}</div></body></html>`;
+
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+    iframe.setAttribute("aria-hidden", "true");
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!doc || !iframe.contentWindow) {
+      document.body.removeChild(iframe);
+      message.error("Unable to start printing.");
+      return;
+    }
+    doc.open();
+    doc.write(html);
+    doc.close();
+
+    setTimeout(() => {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+      setTimeout(() => {
+        if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
+      }, 800);
+    }, 150);
   };
 
   const handleGenerate = async () => {
@@ -244,6 +300,11 @@ export default function DocumentsPage() {
     const caseId = linked === undefined || linked === null || linked === "" ? null : Number(linked);
     const contentOverride =
       draftContent.trim() !== selectedTemplate.content.trim() ? draftContent : undefined;
+    if (editingDocId != null) {
+      await updateMutation.mutateAsync({ id: editingDocId, generatedContent: draftContent });
+      setEditingDocId(null);
+      return;
+    }
     await generateMutation.mutateAsync({
       templateId: selectedTemplate.id,
       caseId: Number.isFinite(caseId) ? caseId : null,
@@ -252,7 +313,14 @@ export default function DocumentsPage() {
     });
   };
 
-  const handlePrint = () => window.print();
+  const handlePrint = () => {
+    const body = (draftContent.trim() || selectedTemplate?.content || "").trim();
+    if (!body) {
+      message.warning("No document content to print.");
+      return;
+    }
+    printDocument(body);
+  };
 
   const renderFieldInput = (f: TemplateField) => {
     if (f.input === "textarea") {
@@ -264,7 +332,7 @@ export default function DocumentsPage() {
     return <Input placeholder={f.label} dir="auto" />;
   };
 
-  const previewBody = draftContent;
+  const previewBody = draftContent || selectedTemplate?.content || "";
 
   const generator = (
     <Row gutter={[24, 24]}>
@@ -287,21 +355,34 @@ export default function DocumentsPage() {
             1. Select template
           </Typography.Title>
           <Input.Search
+            value={templateSearch}
             allowClear
             placeholder="Search templates by name or text…"
             style={{ marginBottom: 12 }}
             onChange={(e) => setTemplateSearch(e.target.value)}
           />
+          <Button
+            style={{ marginBottom: 12 }}
+            onClick={() => {
+              setTemplateSearch("");
+            }}
+          >
+            Clear Filters
+          </Button>
           <Row gutter={[12, 12]}>
             {filteredTemplates.map((t) => {
-              const active = t.id === selectedTemplateId;
+              const active = t.id === effectiveTemplateId;
               const sub = templateSubtitle(t.name);
               return (
                 <Col span={12} key={t.id}>
                   <Card
                     size="small"
                     hoverable
-                    onClick={() => setSelectedTemplateId(t.id)}
+                    onClick={() => {
+                      setSelectedTemplateId(t.id);
+                      setDraftContent(t.content);
+                      setEditingDocId(null);
+                    }}
                     style={{
                       cursor: "pointer",
                       borderWidth: 2,
@@ -340,7 +421,7 @@ export default function DocumentsPage() {
               </Typography.Paragraph>
               <Input.TextArea
                 rows={8}
-                value={draftContent}
+                value={previewBody}
                 onChange={(e) => setDraftContent(e.target.value)}
                 dir="auto"
                 style={{ fontFamily: "inherit" }}
@@ -431,10 +512,10 @@ export default function DocumentsPage() {
                   size="large"
                   icon={<ThunderboltOutlined />}
                   onClick={handleGenerate}
-                  loading={generateMutation.isPending}
+                  loading={generateMutation.isPending || updateMutation.isPending}
                   style={{ minWidth: 200 }}
                 >
-                  Generate document
+                  {editingDocId != null ? "Save document changes" : "Generate document"}
                 </Button>
                 <Button size="large" onClick={resetAll}>
                   Reset form
@@ -519,8 +600,8 @@ export default function DocumentsPage() {
                   color: "#1a1a1a",
                   boxSizing: "border-box",
                   overflow: "hidden",
-                  direction: "ltr",
-                  textAlign: "left",
+                  direction: isRtlText ? "rtl" : "ltr",
+                  textAlign: isRtlText ? "right" : "left",
                 }}
               >
                 {selectedTemplate ? (
@@ -621,6 +702,8 @@ export default function DocumentsPage() {
         }
       `}</style>
       <Tabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
         items={[
           { key: "generator", label: "Document Generator", children: generator },
           {
@@ -630,14 +713,25 @@ export default function DocumentsPage() {
               <>
                 <Space style={{ marginBottom: 16 }}>
                   <Input.Search
+                    value={docSearch}
                     allowClear
                     placeholder="Search documents or template name…"
                     style={{ width: 360 }}
+                    onChange={(e) => setDocSearch(e.target.value)}
                     onSearch={(v) => {
                       setDocSearch(v);
                       setDocPage(1);
                     }}
                   />
+                  <Button
+                    onClick={() => {
+                      setDocSearch("");
+                      setDocPage(1);
+                      setDocPageSize(10);
+                    }}
+                  >
+                    Clear Filters
+                  </Button>
                 </Space>
                 <Table
                   rowKey="id"
@@ -666,12 +760,65 @@ export default function DocumentsPage() {
                     },
                     {
                       title: "Actions",
-                      width: 100,
-                      render: (_, r: GeneratedDocument) => (
-                        <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => setViewDoc(r)}>
-                          View
-                        </Button>
-                      ),
+                      width: 90,
+                      render: (_, r: GeneratedDocument) => {
+                        const items: MenuProps["items"] = [
+                          {
+                            key: "view",
+                            icon: <EyeOutlined />,
+                            label: "View",
+                          },
+                          {
+                            key: "edit",
+                            icon: <EditOutlined />,
+                            label: "Edit",
+                          },
+                          {
+                            key: "print",
+                            icon: <PrinterOutlined />,
+                            label: "Print",
+                          },
+                          {
+                            type: "divider",
+                          },
+                          {
+                            key: "delete",
+                            icon: <DeleteOutlined />,
+                            danger: true,
+                            label: "Delete",
+                          },
+                        ];
+                        return (
+                          <Dropdown
+                            trigger={["click"]}
+                            menu={{
+                              items,
+                              onClick: ({ key }) => {
+                                if (key === "view") {
+                                  setViewDoc(r);
+                                  return;
+                                }
+                                if (key === "edit") {
+                                  setSelectedTemplateId(r.templateId);
+                                  setDraftContent(r.generatedContent);
+                                  setEditingDocId(r.id);
+                                  setActiveTab("generator");
+                                  return;
+                                }
+                                if (key === "print") {
+                                  printDocument(r.generatedContent);
+                                  return;
+                                }
+                                if (key === "delete") {
+                                  void deleteMutation.mutateAsync(r.id);
+                                }
+                              },
+                            }}
+                          >
+                            <Button type="text" icon={<MoreOutlined />} />
+                          </Dropdown>
+                        );
+                      },
                     },
                     {
                       title: "Created",

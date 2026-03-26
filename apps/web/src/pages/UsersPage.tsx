@@ -68,14 +68,24 @@ export default function UsersPage() {
 
       <Space style={{ marginBottom: 16 }}>
         <Input.Search
+          value={search}
           allowClear
           placeholder="Search name, email, address…"
           style={{ width: 320 }}
+          onChange={(e) => setSearch(e.target.value)}
           onSearch={(v) => {
             setSearch(v);
             setPage(1);
           }}
         />
+        <Button
+          onClick={() => {
+            setSearch("");
+            setPage(1);
+          }}
+        >
+          Clear Filters
+        </Button>
       </Space>
 
       <Table

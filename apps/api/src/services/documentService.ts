@@ -96,3 +96,15 @@ export const getDocumentById = (id: number) =>
       case: { include: { client: true } },
     },
   });
+
+export const updateDocument = (id: number, data: Prisma.DocumentUpdateInput) =>
+  prisma.document.update({
+    where: { id },
+    data,
+    include: {
+      template: true,
+      case: { include: { client: true } },
+    },
+  });
+
+export const deleteDocument = (id: number) => prisma.document.delete({ where: { id } });

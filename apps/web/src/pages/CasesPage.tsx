@@ -84,9 +84,11 @@ export default function CasesPage() {
 
       <Space wrap style={{ marginBottom: 16, width: "100%" }}>
         <Input.Search
+          value={search}
           allowClear
           placeholder={t("searchPlaceholder")}
           style={{ width: 280 }}
+          onChange={(e) => setSearch(e.target.value)}
           onSearch={(v) => {
             setSearch(v);
             setPage(1);
@@ -126,6 +128,17 @@ export default function CasesPage() {
           }}
         >
           Apply
+        </Button>
+        <Button
+          onClick={() => {
+            setSearch("");
+            setStatusFilter(undefined);
+            setDraftCaseType("");
+            setAppliedCaseType("");
+            setPage(1);
+          }}
+        >
+          Clear Filters
         </Button>
       </Space>
 

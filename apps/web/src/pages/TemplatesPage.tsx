@@ -129,7 +129,7 @@ export default function TemplatesPage() {
       .filter((f) => f.name && f.label);
     return {
       name: values.name.trim(),
-      content: values.content,
+      content: values.content.normalize("NFC"),
       fields,
     };
   };
@@ -197,6 +197,7 @@ export default function TemplatesPage() {
             <Input.TextArea
               rows={12}
               dir="auto"
+              style={{ fontFamily: '"Noto Naskh Arabic", "Segoe UI", Tahoma, sans-serif' }}
               placeholder="Use {{field_name}} tokens matching the field keys below. Urdu / اردو is supported."
             />
           </Form.Item>
@@ -312,14 +313,24 @@ export default function TemplatesPage() {
       <Card title="Existing templates" style={{ borderRadius: 12 }}>
         <Space style={{ marginBottom: 16 }}>
           <Input.Search
+            value={search}
             allowClear
             placeholder="Search template name or body…"
             style={{ width: 320 }}
+            onChange={(e) => setSearch(e.target.value)}
             onSearch={(v) => {
               setSearch(v);
               setPage(1);
             }}
           />
+          <Button
+            onClick={() => {
+              setSearch("");
+              setPage(1);
+            }}
+          >
+            Clear Filters
+          </Button>
         </Space>
         <Table
           rowKey="id"
@@ -409,7 +420,7 @@ export default function TemplatesPage() {
             label="Content (with placeholders)"
             rules={[{ required: true, min: 1 }]}
           >
-            <Input.TextArea rows={10} dir="auto" />
+            <Input.TextArea rows={10} dir="auto" style={{ fontFamily: '"Noto Naskh Arabic", "Segoe UI", Tahoma, sans-serif' }} />
           </Form.Item>
           <Typography.Title level={5}>Form fields</Typography.Title>
           <Form.List name="fields">
