@@ -10,11 +10,13 @@ import {
   Select,
   Space,
   Table,
+  Tabs,
   Tooltip,
   Typography,
   message,
 } from "antd";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+import JoditEditor from "jodit-react";
 import { api, unwrapPaged } from "../api";
 import type { Template, TemplateField } from "../types";
 
@@ -118,6 +120,18 @@ export default function TemplatesPage() {
     });
   }, [editOpen, editing, editForm]);
 
+  const joditConfig = useMemo(() => ({
+    readonly: false,
+    height: 500,
+    direction: 'rtl',
+    language: 'ur',
+    style: {
+      fontFamily: '"Noto Naskh Arabic", "Segoe UI", Tahoma, sans-serif',
+    },
+    uploader: { insertImageAsBase64URI: true },
+    placeholder: "Use {{field_name}} tokens matching the field keys below. Urdu / اردو is supported."
+  }), []);
+
   const buildPayload = (values: FormValues) => {
     const fields = (values.fields ?? [])
       .map((f) => ({
@@ -172,10 +186,12 @@ export default function TemplatesPage() {
         Document Generator.
       </Typography.Paragraph>
 
-      <Card
-        title="Create template"
-        style={{ marginBottom: 24, borderRadius: 12 }}
-      >
+      <Tabs defaultActiveKey="view" items={[
+        {
+          key: 'create',
+          label: 'Create template',
+          children: (
+            <Card style={{ marginBottom: 24, borderRadius: 12 }}>
         <Form
           form={form}
           layout="vertical"
@@ -192,14 +208,9 @@ export default function TemplatesPage() {
           <Form.Item
             name="content"
             label="Content (with placeholders)"
-            rules={[{ required: true, min: 1, message: "Content required" }]}
+            rules={[{ required: true, message: "Content required" }]}
           >
-            <Input.TextArea
-              rows={12}
-              dir="auto"
-              style={{ fontFamily: '"Noto Naskh Arabic", "Segoe UI", Tahoma, sans-serif' }}
-              placeholder="Use {{field_name}} tokens matching the field keys below. Urdu / اردو is supported."
-            />
+            <JoditEditor config={joditConfig} />
           </Form.Item>
 
           <Typography.Title level={5}>Form fields</Typography.Title>
@@ -309,9 +320,14 @@ export default function TemplatesPage() {
           </Form.Item>
         </Form>
       </Card>
-
-      <Card title="Existing templates" style={{ borderRadius: 12 }}>
-        <Space style={{ marginBottom: 16 }}>
+          )
+        },
+        {
+          key: 'view',
+          label: 'Existing templates',
+          children: (
+            <Card style={{ borderRadius: 12 }}>
+              <Space style={{ marginBottom: 16 }}>
           <Input.Search
             value={search}
             allowClear
@@ -394,6 +410,9 @@ export default function TemplatesPage() {
           ]}
         />
       </Card>
+          )
+        }
+      ]} />
 
       <Modal
         title="Edit template"
@@ -418,9 +437,9 @@ export default function TemplatesPage() {
           <Form.Item
             name="content"
             label="Content (with placeholders)"
-            rules={[{ required: true, min: 1 }]}
+            rules={[{ required: true }]}
           >
-            <Input.TextArea rows={10} dir="auto" style={{ fontFamily: '"Noto Naskh Arabic", "Segoe UI", Tahoma, sans-serif' }} />
+            <JoditEditor config={joditConfig} />
           </Form.Item>
           <Typography.Title level={5}>Form fields</Typography.Title>
           <Form.List name="fields">
