@@ -35,6 +35,7 @@ export interface Template {
   id: number;
   name: string;
   content: string;
+  language?: "en" | "ur";
   fields: TemplateField[];
   createdAt: string;
 }

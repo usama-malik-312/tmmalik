@@ -7,6 +7,8 @@ import {
   Input,
   Modal,
   Popconfirm,
+  Row,
+  Col,
   Select,
   Space,
   Table,
@@ -22,6 +24,7 @@ import type { Template, TemplateField } from "../types";
 
 type FormValues = {
   name: string;
+  language: "en" | "ur";
   content: string;
   fields: TemplateField[];
 };
@@ -115,22 +118,44 @@ export default function TemplatesPage() {
     if (!editOpen || !editing) return;
     editForm.setFieldsValue({
       name: editing.name,
+      language: editing.language ?? "ur",
       content: editing.content,
       fields: normalizeFields(editing.fields),
     });
   }, [editOpen, editing, editForm]);
 
-  const joditConfig = useMemo(() => ({
+  const createLang = Form.useWatch("language", form) || "ur";
+  const editLang = Form.useWatch("language", editForm) || "ur";
+
+  const createJoditConfig = useMemo(() => ({
     readonly: false,
     height: 500,
-    direction: 'rtl',
-    language: 'ur',
+    direction: (createLang === "en" ? "ltr" : "rtl") as "ltr" | "rtl",
+    language: createLang,
     style: {
-      fontFamily: '"Noto Naskh Arabic", "Segoe UI", Tahoma, sans-serif',
+      fontFamily: '"Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", "Noto Naskh Arabic", "Segoe UI", Tahoma, sans-serif',
     },
     uploader: { insertImageAsBase64URI: true },
+    defaultActionOnPaste: "insert_clear_html",
+    askBeforePasteHTML: false,
+    askBeforePasteFromWord: false,
     placeholder: "Use {{field_name}} tokens matching the field keys below. Urdu / اردو is supported."
-  }), []);
+  }), [createLang]);
+
+  const editJoditConfig = useMemo(() => ({
+    readonly: false,
+    height: 500,
+    direction: (editLang === "en" ? "ltr" : "rtl") as "ltr" | "rtl",
+    language: editLang,
+    style: {
+      fontFamily: '"Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", "Noto Naskh Arabic", "Segoe UI", Tahoma, sans-serif',
+    },
+    uploader: { insertImageAsBase64URI: true },
+    defaultActionOnPaste: "insert_clear_html",
+    askBeforePasteHTML: false,
+    askBeforePasteFromWord: false,
+    placeholder: "Use {{field_name}} tokens matching the field keys below. Urdu / اردو is supported."
+  }), [editLang]);
 
   const buildPayload = (values: FormValues) => {
     const fields = (values.fields ?? [])
@@ -143,6 +168,7 @@ export default function TemplatesPage() {
       .filter((f) => f.name && f.label);
     return {
       name: values.name.trim(),
+      language: values.language || "ur",
       content: values.content.normalize("NFC"),
       fields,
     };
@@ -186,7 +212,7 @@ export default function TemplatesPage() {
         Document Generator.
       </Typography.Paragraph>
 
-      <Tabs defaultActiveKey="view" items={[
+      <Tabs defaultActiveKey="create" items={[
         {
           key: 'create',
           label: 'Create template',
@@ -195,22 +221,40 @@ export default function TemplatesPage() {
         <Form
           form={form}
           layout="vertical"
-          initialValues={{ fields: [defaultField()] }}
+          initialValues={{ fields: [defaultField()], language: "ur" }}
           onFinish={onFinishCreate}
         >
-          <Form.Item
-            name="name"
-            label="Template name"
-            rules={[{ required: true, message: "Name is required" }]}
-          >
-            <Input placeholder="e.g. Mukhtaar Nama" />
-          </Form.Item>
+          <Row gutter={16}>
+            <Col xs={24} sm={16} md={18}>
+              <Form.Item
+                name="name"
+                label="Template name"
+                rules={[{ required: true, message: "Name is required" }]}
+              >
+                <Input placeholder="e.g. Mukhtaar Nama" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={8} md={6}>
+              <Form.Item
+                name="language"
+                label="Language / Typing Direction"
+                rules={[{ required: true }]}
+              >
+                <Select
+                  options={[
+                    { value: "ur", label: "Urdu (Right-to-Left)" },
+                    { value: "en", label: "English (Left-to-Right)" },
+                  ]}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
           <Form.Item
             name="content"
             label="Content (with placeholders)"
             rules={[{ required: true, message: "Content required" }]}
           >
-            <JoditEditor config={joditConfig} />
+            <JoditEditor config={createJoditConfig} />
           </Form.Item>
 
           <Typography.Title level={5}>Form fields</Typography.Title>
@@ -427,19 +471,37 @@ export default function TemplatesPage() {
         destroyOnClose
       >
         <Form form={editForm} layout="vertical" onFinish={onFinishEdit}>
-          <Form.Item
-            name="name"
-            label="Template name"
-            rules={[{ required: true }]}
-          >
-            <Input />
-          </Form.Item>
+          <Row gutter={16}>
+            <Col xs={24} sm={16} md={18}>
+              <Form.Item
+                name="name"
+                label="Template name"
+                rules={[{ required: true }]}
+              >
+                <Input />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={8} md={6}>
+              <Form.Item
+                name="language"
+                label="Language / Typing Direction"
+                rules={[{ required: true }]}
+              >
+                <Select
+                  options={[
+                    { value: "ur", label: "Urdu (Right-to-Left)" },
+                    { value: "en", label: "English (Left-to-Right)" },
+                  ]}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
           <Form.Item
             name="content"
             label="Content (with placeholders)"
             rules={[{ required: true }]}
           >
-            <JoditEditor config={joditConfig} />
+            <JoditEditor config={editJoditConfig} />
           </Form.Item>
           <Typography.Title level={5}>Form fields</Typography.Title>
           <Form.List name="fields">

@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;700&display=swap');
 
 body {
@@ -11,6 +12,12 @@ body {
     "Helvetica Neue",
     Arial,
     sans-serif;
+}
+
+/* Force Jodit editor to use Arabic/Urdu font and RTL layout */
+.jodit-wysiwyg,
+.jodit-wysiwyg * {
+  font-family: "Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", "Noto Naskh Arabic", "Segoe UI", Tahoma, sans-serif !important;
 }
 
 /* Sidebar: stacked icons and text */

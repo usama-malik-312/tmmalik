@@ -18,7 +18,8 @@ import {
   Tabs,
   Typography,
 } from "antd";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
+import JoditEditor from "jodit-react";
 import { api, unwrapPaged } from "../api";
 import type { CaseItem, Client, GeneratedDocument, Template, TemplateField } from "../types";
 
@@ -80,27 +81,13 @@ function formatDayjsLike(raw: unknown): string | null {
   return null;
 }
 
-function renderPreviewContent(content: string, values: Record<string, string>) {
-  const parts: ReactNode[] = [];
+function getPreviewContentHTML(content: string, values: Record<string, string>) {
   const re = /\{\{\s*([^}]+?)\s*\}\}/g;
-  let last = 0;
-  let m: RegExpExecArray | null;
-  let key = 0;
-  while ((m = re.exec(content)) !== null) {
-    if (m.index > last) {
-      parts.push(<span key={`t${key++}`}>{content.slice(last, m.index)}</span>);
-    }
-    const tokenName = m[1].trim();
-    const val = values[tokenName];
-    parts.push(
-      <strong key={`v${key++}`} style={{ fontWeight: 700 }}>
-        {val?.trim() ? val : "______"}
-      </strong>
-    );
-    last = re.lastIndex;
-  }
-  parts.push(<span key={`t${key++}`}>{content.slice(last)}</span>);
-  return parts;
+  return content.replace(re, (_, tokenName) => {
+    const val = values[tokenName.trim()];
+    const text = val?.trim() ? val : "______";
+    return `<strong style="font-weight: 700;">${text}</strong>`;
+  });
 }
 
 export default function DocumentsPage() {
@@ -235,23 +222,20 @@ export default function DocumentsPage() {
     message.info("Form reset.");
   };
 
-  const isRtlText = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/.test(draftContent);
+  const isRtlText = (selectedTemplate?.language ?? "ur") === "ur";
 
-  const printDocument = (content: string) => {
-    const rtl = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/.test(content);
-    const escaped = content
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/\n/g, "<br />");
+  const printDocument = (content: string, isRtl: boolean = true) => {
+    const rtl = isRtl;
     const html = `<!doctype html><html><head><meta charset="utf-8" />
       <title>Document</title>
       <style>
-        @page { size: A4 portrait; margin: 14mm; }
+        @page { size: auto; margin: 0mm; }
         html, body { margin: 0; padding: 0; background: #fff; }
-        body { font-family: "Times New Roman", Times, "Noto Naskh Arabic", "Segoe UI", serif; font-size: 15px; line-height: 1.7; }
+        body { font-family: "Jameel Noori Nastaleeq", "Times New Roman", Times, "Noto Nastaliq Urdu", "Noto Naskh Arabic", "Segoe UI", serif; font-size: 15px; line-height: 1.7; padding: 14mm; }
         .doc { word-break: break-word; overflow-wrap: anywhere; direction: ${rtl ? "rtl" : "ltr"}; text-align: ${rtl ? "right" : "left"}; unicode-bidi: plaintext; }
-      </style></head><body><div class="doc">${escaped}</div></body></html>`;
+        .doc table { border-collapse: collapse; width: 100%; margin: 16px 0; }
+        .doc th, .doc td { border: 1px solid #000; padding: 8px; }
+      </style></head><body><div class="doc">${content}</div></body></html>`;
 
     const iframe = document.createElement("iframe");
     iframe.style.position = "fixed";
@@ -319,7 +303,9 @@ export default function DocumentsPage() {
       message.warning("No document content to print.");
       return;
     }
-    printDocument(body);
+    const htmlToPrint = getPreviewContentHTML(body, previewValues);
+    const docLang = selectedTemplate?.language ?? "ur";
+    printDocument(htmlToPrint, docLang === "ur");
   };
 
   const renderFieldInput = (f: TemplateField) => {
@@ -419,12 +405,22 @@ export default function DocumentsPage() {
                 Adjust wording for this run only — the saved template in the library is unchanged. Use the same{" "}
                 <code>{"{{placeholders}}"}</code> as in the template.
               </Typography.Paragraph>
-              <Input.TextArea
-                rows={8}
+              <JoditEditor
                 value={previewBody}
-                onChange={(e) => setDraftContent(e.target.value)}
-                dir="auto"
-                style={{ fontFamily: "inherit" }}
+                config={{
+                  readonly: false,
+                  height: 400,
+                  direction: isRtlText ? ("rtl" as const) : ("ltr" as const),
+                  language: selectedTemplate?.language ?? "ur",
+                  style: {
+                    fontFamily: '"Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", "Noto Naskh Arabic", "Segoe UI", Tahoma, sans-serif',
+                  },
+                  uploader: { insertImageAsBase64URI: true },
+                  defaultActionOnPaste: "insert_clear_html",
+                  askBeforePasteHTML: false,
+                  askBeforePasteFromWord: false,
+                }}
+                onBlur={(newContent) => setDraftContent(newContent)}
               />
 
               <Typography.Title level={5} style={{ marginTop: 16 }}>
@@ -594,7 +590,7 @@ export default function DocumentsPage() {
                   padding: "48px 56px",
                   minHeight: 400,
                   boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
-                  fontFamily: '"Times New Roman", Times, "Noto Naskh Arabic", "Segoe UI", serif',
+                  fontFamily: '"Jameel Noori Nastaleeq", "Times New Roman", Times, "Noto Nastaliq Urdu", "Noto Naskh Arabic", "Segoe UI", serif',
                   fontSize: 15,
                   lineHeight: 1.65,
                   color: "#1a1a1a",
@@ -608,16 +604,15 @@ export default function DocumentsPage() {
                   <div
                     className="legal-doc-body"
                     style={{
-                      whiteSpace: "pre-wrap",
+                      whiteSpace: "normal",
                       overflowWrap: "anywhere",
                       wordBreak: "break-word",
                       maxWidth: "100%",
                       overflowX: "hidden",
                       unicodeBidi: "plaintext",
                     }}
-                  >
-                    {renderPreviewContent(previewBody, previewValues)}
-                  </div>
+                    dangerouslySetInnerHTML={{ __html: getPreviewContentHTML(previewBody, previewValues) }}
+                  />
                 ) : (
                   <Typography.Paragraph type="secondary">Select a template to preview.</Typography.Paragraph>
                 )}
@@ -637,6 +632,19 @@ export default function DocumentsPage() {
         .legal-doc-body strong {
           overflow-wrap: anywhere;
           word-break: break-word;
+        }
+        .legal-doc-body,
+        .legal-doc-body * {
+          font-family: "Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", "Noto Naskh Arabic", "Segoe UI", Tahoma, sans-serif !important;
+        }
+        .legal-doc-body table {
+          border-collapse: collapse;
+          width: 100%;
+          margin: 16px 0;
+        }
+        .legal-doc-body th, .legal-doc-body td {
+          border: 1px solid #000;
+          padding: 8px;
         }
         @media print {
           @page {
@@ -752,11 +760,14 @@ export default function DocumentsPage() {
                     { title: "Case", render: (_, r: GeneratedDocument) => (r.caseId != null ? `#${r.caseId}` : "—") },
                     {
                       title: "Preview",
-                      render: (_, r: GeneratedDocument) => (
-                        <Typography.Paragraph ellipsis={{ rows: 2 }} style={{ maxWidth: 280, margin: 0 }}>
-                          {r.generatedContent}
-                        </Typography.Paragraph>
-                      ),
+                      render: (_, r: GeneratedDocument) => {
+                        const plainText = r.generatedContent.replace(/<[^>]+>/g, ' ');
+                        return (
+                          <Typography.Paragraph ellipsis={{ rows: 2 }} style={{ maxWidth: 280, margin: 0 }}>
+                            {plainText}
+                          </Typography.Paragraph>
+                        );
+                      },
                     },
                     {
                       title: "Actions",
