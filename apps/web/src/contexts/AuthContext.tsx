@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useMemo, useState } from "react";
 import { api } from "../api";
 import type { User } from "../types";
 
@@ -15,17 +15,16 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 const STORAGE_KEY = "auth_user";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-
-  useEffect(() => {
+  const [user, setUser] = useState<User | null>(() => {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return;
+    if (!raw) return null;
     try {
-      setUser(JSON.parse(raw) as User);
+      return JSON.parse(raw) as User;
     } catch {
       localStorage.removeItem(STORAGE_KEY);
+      return null;
     }
-  }, []);
+  });
 
   const value = useMemo<AuthContextValue>(
     () => ({
