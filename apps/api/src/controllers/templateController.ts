@@ -17,7 +17,7 @@ export async function createTemplate(req: Request, res: Response, next: NextFunc
     const payload = templateSchema.parse(req.body);
     const entity = await service.createTemplate({
       name: payload.name,
-      content: payload.content,
+      content: payload.content.normalize("NFC"),
       fields: payload.fields as Prisma.InputJsonValue,
     });
     res.status(201).json({ success: true, data: entity });
@@ -59,7 +59,10 @@ export async function getTemplateById(req: Request, res: Response, next: NextFun
 export async function updateTemplate(req: Request, res: Response, next: NextFunction) {
   try {
     const payload = templateSchema.partial().parse(req.body);
-    const entity = await service.updateTemplate(parseId(req.params.id), payload);
+    const entity = await service.updateTemplate(parseId(req.params.id), {
+      ...payload,
+      content: typeof payload.content === "string" ? payload.content.normalize("NFC") : payload.content,
+    });
     res.json({ success: true, data: entity });
   } catch (error) {
     next(error);

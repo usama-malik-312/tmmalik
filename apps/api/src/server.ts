@@ -3,6 +3,7 @@ import express from "express";
 import morgan from "morgan";
 import { ensureTemplatesSchema } from "./db/ensureTemplatesSchema.js";
 import { ensureUsersSchema } from "./db/ensureUsersSchema.js";
+import { verifyDbEncoding } from "./db/verifyDbEncoding.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import authRoutes from "./routes/authRoutes.js";
 import caseRoutes from "./routes/caseRoutes.js";
@@ -34,6 +35,7 @@ void (async () => {
   try {
     await ensureTemplatesSchema();
     await ensureUsersSchema();
+    await verifyDbEncoding();
   } catch (err) {
     console.error("[DB] startup schema checks failed:", err);
   }

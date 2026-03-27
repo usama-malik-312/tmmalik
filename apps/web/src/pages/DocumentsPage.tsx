@@ -90,6 +90,14 @@ function getPreviewContentHTML(content: string, values: Record<string, string>) 
   });
 }
 
+function escapeHtmlToEditor(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\r\n|\r|\n/g, "<br>");
+}
+
 export default function DocumentsPage() {
   const queryClient = useQueryClient();
   const [form] = Form.useForm();
@@ -223,6 +231,33 @@ export default function DocumentsPage() {
   };
 
   const isRtlText = (selectedTemplate?.language ?? "ur") === "ur";
+  const editorConfig = useMemo(
+    () => ({
+      readonly: false,
+      height: 400,
+      direction: isRtlText ? ("rtl" as const) : ("ltr" as const),
+      language: selectedTemplate?.language ?? "ur",
+      style: {
+        fontFamily: '"Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", "Noto Naskh Arabic", "Segoe UI", Tahoma, sans-serif',
+        direction: isRtlText ? "rtl" : "ltr",
+        textAlign: isRtlText ? "right" : "left",
+        unicodeBidi: "plaintext",
+      },
+      uploader: { insertImageAsBase64URI: true },
+      askBeforePasteHTML: false,
+      askBeforePasteFromWord: false,
+      events: {
+        paste(this: any, event: ClipboardEvent) {
+          const text = event?.clipboardData?.getData("text/plain");
+          if (typeof text !== "string") return;
+          event.preventDefault();
+          this?.selection?.insertHTML?.(escapeHtmlToEditor(text.normalize("NFC")));
+          return false;
+        },
+      },
+    }),
+    [isRtlText, selectedTemplate?.language]
+  );
 
   const printDocument = (content: string, isRtl: boolean = true) => {
     const rtl = isRtl;
@@ -407,19 +442,7 @@ export default function DocumentsPage() {
               </Typography.Paragraph>
               <JoditEditor
                 value={previewBody}
-                config={{
-                  readonly: false,
-                  height: 400,
-                  direction: isRtlText ? ("rtl" as const) : ("ltr" as const),
-                  language: selectedTemplate?.language ?? "ur",
-                  style: {
-                    fontFamily: '"Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", "Noto Naskh Arabic", "Segoe UI", Tahoma, sans-serif',
-                  },
-                  uploader: { insertImageAsBase64URI: true },
-                  defaultActionOnPaste: "insert_clear_html",
-                  askBeforePasteHTML: false,
-                  askBeforePasteFromWord: false,
-                }}
+                config={editorConfig}
                 onBlur={(newContent) => setDraftContent(newContent)}
               />
 

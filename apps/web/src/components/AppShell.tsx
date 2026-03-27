@@ -5,14 +5,11 @@ import {
   FolderOpenOutlined,
   FormOutlined,
   HistoryOutlined,
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
   TeamOutlined,
   UserOutlined,
 } from "@ant-design/icons";
 import {
   Avatar,
-  Button,
   Dropdown,
   Layout,
   Menu,
@@ -20,7 +17,6 @@ import {
   Space,
   Typography,
 } from "antd";
-import { useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useI18n } from "../contexts/I18nContext";

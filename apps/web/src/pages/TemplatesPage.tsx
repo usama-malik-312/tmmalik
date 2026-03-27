@@ -52,6 +52,14 @@ function normalizeFields(raw: unknown): TemplateField[] {
   return list.length ? list : [defaultField()];
 }
 
+function escapeHtmlToEditor(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\r\n|\r|\n/g, "<br>");
+}
+
 export default function TemplatesPage() {
   const queryClient = useQueryClient();
   const [form] = Form.useForm<FormValues>();
@@ -134,12 +142,23 @@ export default function TemplatesPage() {
     language: createLang,
     style: {
       fontFamily: '"Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", "Noto Naskh Arabic", "Segoe UI", Tahoma, sans-serif',
+      direction: createLang === "en" ? "ltr" : "rtl",
+      textAlign: createLang === "en" ? "left" : "right",
+      unicodeBidi: "plaintext",
     },
     uploader: { insertImageAsBase64URI: true },
-    defaultActionOnPaste: "insert_clear_html",
     askBeforePasteHTML: false,
     askBeforePasteFromWord: false,
-    placeholder: "Use {{field_name}} tokens matching the field keys below. Urdu / اردو is supported."
+    placeholder: "Use {{field_name}} tokens matching the field keys below. Urdu / اردو is supported.",
+    events: {
+      paste(this: any, event: ClipboardEvent) {
+        const text = event?.clipboardData?.getData("text/plain");
+        if (typeof text !== "string") return;
+        event.preventDefault();
+        this?.selection?.insertHTML?.(escapeHtmlToEditor(text.normalize("NFC")));
+        return false;
+      },
+    },
   }), [createLang]);
 
   const editJoditConfig = useMemo(() => ({
@@ -149,12 +168,23 @@ export default function TemplatesPage() {
     language: editLang,
     style: {
       fontFamily: '"Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", "Noto Naskh Arabic", "Segoe UI", Tahoma, sans-serif',
+      direction: editLang === "en" ? "ltr" : "rtl",
+      textAlign: editLang === "en" ? "left" : "right",
+      unicodeBidi: "plaintext",
     },
     uploader: { insertImageAsBase64URI: true },
-    defaultActionOnPaste: "insert_clear_html",
     askBeforePasteHTML: false,
     askBeforePasteFromWord: false,
-    placeholder: "Use {{field_name}} tokens matching the field keys below. Urdu / اردو is supported."
+    placeholder: "Use {{field_name}} tokens matching the field keys below. Urdu / اردو is supported.",
+    events: {
+      paste(this: any, event: ClipboardEvent) {
+        const text = event?.clipboardData?.getData("text/plain");
+        if (typeof text !== "string") return;
+        event.preventDefault();
+        this?.selection?.insertHTML?.(escapeHtmlToEditor(text.normalize("NFC")));
+        return false;
+      },
+    },
   }), [editLang]);
 
   const buildPayload = (values: FormValues) => {

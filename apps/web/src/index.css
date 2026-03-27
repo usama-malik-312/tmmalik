@@ -1,6 +1,12 @@
 @import url('https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;700&display=swap');
 
+@font-face {
+  font-family: "Jameel Noori Nastaleeq";
+  src: local("Jameel Noori Nastaleeq"), local("Jameel Noori Nastaleeq Regular");
+  font-display: swap;
+}
+
 body {
   margin: 0;
   background: #f8fafc;
@@ -18,6 +24,19 @@ body {
 .jodit-wysiwyg,
 .jodit-wysiwyg * {
   font-family: "Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", "Noto Naskh Arabic", "Segoe UI", Tahoma, sans-serif !important;
+  font-feature-settings: "liga" 1, "calt" 1;
+  text-rendering: optimizeLegibility;
+}
+
+.jodit-wysiwyg {
+  direction: rtl;
+  text-align: right;
+  unicode-bidi: plaintext;
+}
+
+.jodit-wysiwyg[dir="ltr"] {
+  direction: ltr;
+  text-align: left;
 }
 
 /* Sidebar: stacked icons and text */
