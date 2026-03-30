@@ -1,5 +1,7 @@
 import { NextFunction, Request, Response } from "express";
+import * as activityService from "../services/activityService.js";
 import * as service from "../services/documentService.js";
+import { resolveActorFromRequest } from "../utils/actorFromRequest.js";
 import { parseListQuery } from "../utils/listQuery.js";
 import { generateDocumentSchema } from "../validators/documentValidator.js";
 
@@ -14,7 +16,24 @@ function parseId(value: string | string[] | undefined): number {
 export async function generateDocument(req: Request, res: Response, next: NextFunction) {
   try {
     const payload = generateDocumentSchema.parse(req.body);
+    const actor = await resolveActorFromRequest(req);
     const entity = await service.generateDocument(payload);
+    if (entity.caseId != null) {
+      await activityService.logDocumentGeneratedForCase(
+        entity.caseId,
+        entity.id,
+        entity.templateId,
+        entity.template.name,
+        actor
+      );
+    } else {
+      await activityService.logDocumentGeneratedStandalone(
+        entity.id,
+        entity.templateId,
+        entity.template.name,
+        actor
+      );
+    }
     res.status(201).json({ success: true, data: entity });
   } catch (error) {
     next(error);
@@ -68,7 +87,15 @@ export async function updateDocument(req: Request, res: Response, next: NextFunc
 
 export async function deleteDocument(req: Request, res: Response, next: NextFunction) {
   try {
-    await service.deleteDocument(parseId(req.params.id));
+    const id = parseId(req.params.id);
+    const before = await service.getDocumentById(id);
+    if (!before) {
+      res.status(404).json({ success: false, message: "Document not found" });
+      return;
+    }
+    const actor = await resolveActorFromRequest(req);
+    await service.deleteDocument(id);
+    await activityService.logDocumentDeleted(id, before.template.name, before.caseId ?? null, actor);
     res.json({ success: true, message: "Document deleted" });
   } catch (error) {
     next(error);

@@ -145,8 +145,14 @@ export default function DocumentsPage() {
       formData: Record<string, string>;
       contentOverride?: string;
     }) => api.post("/documents/generate", payload),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["documents"] });
+      queryClient.invalidateQueries({ queryKey: ["activities", "recent"] });
+      queryClient.invalidateQueries({ queryKey: ["cases"] });
+      const cid = variables.caseId;
+      if (cid != null && Number.isFinite(Number(cid))) {
+        queryClient.invalidateQueries({ queryKey: ["cases", Number(cid), "activities"] });
+      }
       message.success("Document generated and saved.");
     },
     onError: (err: unknown) => {
@@ -160,6 +166,8 @@ export default function DocumentsPage() {
       api.put(`/documents/${id}`, { generatedContent }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["documents"] });
+      queryClient.invalidateQueries({ queryKey: ["activities", "recent"] });
+      queryClient.invalidateQueries({ queryKey: ["cases"] });
       message.success("Document updated.");
     },
   });
@@ -168,6 +176,8 @@ export default function DocumentsPage() {
     mutationFn: (id: number) => api.delete(`/documents/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["documents"] });
+      queryClient.invalidateQueries({ queryKey: ["activities", "recent"] });
+      queryClient.invalidateQueries({ queryKey: ["cases"] });
       if (editingDocId != null) setEditingDocId(null);
       message.success("Document deleted.");
     },

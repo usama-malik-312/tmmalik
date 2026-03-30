@@ -88,6 +88,7 @@ export default function TemplatesPage() {
     }) => api.post("/templates", payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["templates"] });
+      queryClient.invalidateQueries({ queryKey: ["activities", "recent"] });
       form.resetFields();
       form.setFieldsValue({ fields: [defaultField()] });
       message.success("Template created.");
@@ -104,6 +105,7 @@ export default function TemplatesPage() {
     }) => api.put(`/templates/${id}`, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["templates"] });
+      queryClient.invalidateQueries({ queryKey: ["activities", "recent"] });
       queryClient.invalidateQueries({ queryKey: ["documents"] });
       setEditOpen(false);
       setEditing(null);
@@ -116,6 +118,7 @@ export default function TemplatesPage() {
     mutationFn: (id: number) => api.delete(`/templates/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["templates"] });
+      queryClient.invalidateQueries({ queryKey: ["activities", "recent"] });
       queryClient.invalidateQueries({ queryKey: ["documents"] });
       message.success("Template and related generated documents removed.");
     },

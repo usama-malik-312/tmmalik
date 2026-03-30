@@ -42,15 +42,24 @@ export default function ClientsPage() {
 
   const createMutation = useMutation({
     mutationFn: (payload: Partial<Client>) => api.post("/clients", payload),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["clients"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["clients"] });
+      queryClient.invalidateQueries({ queryKey: ["activities", "recent"] });
+    },
   });
   const updateMutation = useMutation({
     mutationFn: ({ id, payload }: { id: number; payload: Partial<Client> }) => api.put(`/clients/${id}`, payload),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["clients"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["clients"] });
+      queryClient.invalidateQueries({ queryKey: ["activities", "recent"] });
+    },
   });
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/clients/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["clients"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["clients"] });
+      queryClient.invalidateQueries({ queryKey: ["activities", "recent"] });
+    },
   });
 
   const onSubmit = async () => {

@@ -1,5 +1,7 @@
 import { NextFunction, Request, Response } from "express";
+import * as activityService from "../services/activityService.js";
 import * as service from "../services/caseService.js";
+import { resolveActorFromRequest } from "../utils/actorFromRequest.js";
 import { optionalQueryString, parseListQuery } from "../utils/listQuery.js";
 import { caseSchema } from "../validators/caseValidator.js";
 
@@ -14,7 +16,8 @@ function parseId(value: string | string[] | undefined): number {
 export async function createCase(req: Request, res: Response, next: NextFunction) {
   try {
     const payload = caseSchema.parse(req.body);
-    const entity = await service.createCase(payload);
+    const actor = await resolveActorFromRequest(req);
+    const entity = await service.createCase(payload, actor);
     res.status(201).json({ success: true, data: entity });
   } catch (error) {
     next(error);
@@ -57,9 +60,34 @@ export async function getCaseById(req: Request, res: Response, next: NextFunctio
 
 export async function updateCase(req: Request, res: Response, next: NextFunction) {
   try {
+    const id = parseId(req.params.id);
+    const before = await service.getCaseById(id);
+    if (!before) {
+      res.status(404).json({ success: false, message: "Case not found" });
+      return;
+    }
     const payload = caseSchema.partial().parse(req.body);
-    const entity = await service.updateCase(parseId(req.params.id), payload);
+    const actor = await resolveActorFromRequest(req);
+    const entity = await service.updateCase(id, payload);
+    if (payload.status !== undefined && payload.status !== before.status) {
+      await activityService.logCaseStatusChanged(id, before.status, entity.status, actor);
+    }
     res.json({ success: true, data: entity });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getCaseActivities(req: Request, res: Response, next: NextFunction) {
+  try {
+    const id = parseId(req.params.id);
+    const c = await service.getCaseById(id);
+    if (!c) {
+      res.status(404).json({ success: false, message: "Case not found" });
+      return;
+    }
+    const items = await activityService.getActivitiesForCase(id);
+    res.json({ success: true, data: items });
   } catch (error) {
     next(error);
   }

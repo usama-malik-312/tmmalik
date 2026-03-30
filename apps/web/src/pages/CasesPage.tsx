@@ -2,6 +2,7 @@ import { PlusOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, Form, Input, Modal, Popconfirm, Select, Space, Table, Tag, Tooltip, Typography } from "antd";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { api, unwrapPaged } from "../api";
 import { useI18n } from "../contexts/I18nContext";
 import type { CaseItem, CaseStatus, Client } from "../types";
@@ -44,11 +45,19 @@ export default function CasesPage() {
 
   const createMutation = useMutation({
     mutationFn: (payload: Partial<CaseItem>) => api.post("/cases", payload),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["cases"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cases"] });
+      queryClient.invalidateQueries({ queryKey: ["activities", "recent"] });
+    },
   });
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: { id: number; status: CaseStatus }) => api.put(`/cases/${id}`, { status }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["cases"] }),
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: ["cases"] });
+      queryClient.invalidateQueries({ queryKey: ["cases", vars.id] });
+      queryClient.invalidateQueries({ queryKey: ["cases", vars.id, "activities"] });
+      queryClient.invalidateQueries({ queryKey: ["activities", "recent"] });
+    },
   });
 
   const onCreate = async () => {
@@ -106,7 +115,9 @@ export default function CasesPage() {
           options={[
             { value: "draft", label: "draft" },
             { value: "in_progress", label: "in_progress" },
+            { value: "submitted", label: "submitted" },
             { value: "completed", label: "completed" },
+            { value: "rejected", label: "rejected" },
           ]}
         />
         <Input
@@ -157,6 +168,13 @@ export default function CasesPage() {
           },
         }}
         columns={[
+          {
+            title: "ID",
+            width: 72,
+            render: (_, record: CaseItem) => (
+              <Link to={`/cases/${record.id}`}>{record.id}</Link>
+            ),
+          },
           { title: t("clients"), render: (_, record: CaseItem) => record.client?.name ?? "-" },
           { title: "Case Type", dataIndex: "caseType" },
           {
@@ -188,7 +206,9 @@ export default function CasesPage() {
                   options={[
                     { value: "draft", label: <Tag>draft</Tag> },
                     { value: "in_progress", label: <Tag color="blue">in_progress</Tag> },
+                    { value: "submitted", label: <Tag color="gold">submitted</Tag> },
                     { value: "completed", label: <Tag color="green">completed</Tag> },
+                    { value: "rejected", label: <Tag color="red">rejected</Tag> },
                   ]}
                 />
               </Popconfirm>
@@ -219,7 +239,15 @@ export default function CasesPage() {
             <Input />
           </Form.Item>
           <Form.Item name="status" label="Status" rules={[{ required: true }]}>
-            <Select options={[{ value: "draft" }, { value: "in_progress" }, { value: "completed" }]} />
+            <Select
+              options={[
+                { value: "draft" },
+                { value: "in_progress" },
+                { value: "submitted" },
+                { value: "completed" },
+                { value: "rejected" },
+              ]}
+            />
           </Form.Item>
           <Form.Item name="propertyDetails" label="Property Details" rules={[{ required: true }]}>
             <Input.TextArea rows={3} />

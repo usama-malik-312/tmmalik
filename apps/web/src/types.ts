@@ -1,4 +1,17 @@
-export type CaseStatus = "draft" | "in_progress" | "completed";
+export type CaseStatus = "draft" | "in_progress" | "submitted" | "completed" | "rejected";
+
+export type ActivityEntityType = "client" | "case" | "document" | "template";
+
+export interface ActivityItem {
+  id: string;
+  entityType: ActivityEntityType;
+  entityId: string;
+  action: string;
+  metadata: Record<string, unknown> | null;
+  actorUserId: number | null;
+  actorNameSnapshot: string | null;
+  createdAt: string;
+}
 
 export interface Client {
   id: number;

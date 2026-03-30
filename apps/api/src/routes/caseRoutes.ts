@@ -5,6 +5,7 @@ const router = Router();
 
 router.post("/", controller.createCase);
 router.get("/", controller.getCases);
+router.get("/:id/activities", controller.getCaseActivities);
 router.get("/:id", controller.getCaseById);
 router.put("/:id", controller.updateCase);
 

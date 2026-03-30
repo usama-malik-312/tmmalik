@@ -1,5 +1,7 @@
 import { NextFunction, Request, Response } from "express";
+import * as activityService from "../services/activityService.js";
 import * as service from "../services/clientService.js";
+import { resolveActorFromRequest } from "../utils/actorFromRequest.js";
 import { optionalQueryString, parseListQuery } from "../utils/listQuery.js";
 import { clientSchema } from "../validators/clientValidator.js";
 
@@ -60,7 +62,9 @@ export async function getClientById(req: Request, res: Response, next: NextFunct
 export async function updateClient(req: Request, res: Response, next: NextFunction) {
   try {
     const payload = clientSchema.partial().parse(req.body);
+    const actor = await resolveActorFromRequest(req);
     const client = await service.updateClient(parseId(req.params.id), payload);
+    await activityService.logClientUpdated(client.id, client.name, actor);
     res.json({ success: true, data: client });
   } catch (error) {
     next(error);
@@ -69,7 +73,15 @@ export async function updateClient(req: Request, res: Response, next: NextFuncti
 
 export async function deleteClient(req: Request, res: Response, next: NextFunction) {
   try {
-    await service.deleteClient(parseId(req.params.id));
+    const id = parseId(req.params.id);
+    const existing = await service.getClientById(id);
+    if (!existing) {
+      res.status(404).json({ success: false, message: "Client not found" });
+      return;
+    }
+    const actor = await resolveActorFromRequest(req);
+    await service.deleteClient(id);
+    await activityService.logClientDeleted(id, existing.name, actor);
     res.json({ success: true, message: "Client deleted" });
   } catch (error) {
     next(error);

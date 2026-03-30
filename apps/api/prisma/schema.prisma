@@ -10,7 +10,33 @@ datasource db {
 enum CaseStatus {
   draft
   in_progress
+  submitted
   completed
+  rejected
+}
+
+enum ActivityEntityType {
+  client
+  case
+  document
+  template
+}
+
+model Activity {
+  id                String             @id @default(uuid())
+  entityType        ActivityEntityType
+  entityId          String
+  action            String
+  metadata          Json?
+  actorUserId       Int?
+  actorNameSnapshot String?
+  createdAt         DateTime           @default(now())
+
+  actor User? @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId])
+  @@index([actorUserId])
+  @@map("activities")
 }
 
 model Client {
@@ -45,6 +71,7 @@ model Template {
   id        Int      @id @default(autoincrement())
   name      String
   content   String   @db.Text
+  language  String   @default("ur")
   fields    Json
   createdAt DateTime @default(now())
   documents Document[]
@@ -76,6 +103,8 @@ model User {
   address   String
   userType  Int
   createdAt DateTime @default(now())
+
+  activities Activity[]
 
   @@map("users")
 }

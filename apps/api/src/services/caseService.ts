@@ -1,7 +1,24 @@
-import { CaseStatus, Prisma } from "@prisma/client";
+import { ActivityEntityType, CaseStatus, Prisma } from "@prisma/client";
 import { prisma } from "../config/prisma.js";
+import type { ActorSnapshot } from "../utils/actorFromRequest.js";
+import { createActivityTx } from "./activityService.js";
 
-export const createCase = (data: Prisma.CaseUncheckedCreateInput) => prisma.case.create({ data, include: { client: true } });
+export async function createCase(data: Prisma.CaseUncheckedCreateInput, actor: ActorSnapshot) {
+  return prisma.$transaction(async (tx) => {
+    const c = await tx.case.create({ data, include: { client: true } });
+    await createActivityTx(
+      tx,
+      {
+        entityType: ActivityEntityType.case,
+        entityId: String(c.id),
+        action: "case_created",
+        metadata: { clientId: c.clientId },
+      },
+      actor
+    );
+    return c;
+  });
+}
 
 export type CaseListParams = {
   skip: number;
@@ -14,7 +31,7 @@ export type CaseListParams = {
 function buildCaseWhere(params: CaseListParams): Prisma.CaseWhereInput {
   const and: Prisma.CaseWhereInput[] = [];
   if (params.status) {
-    const allowed = new Set<string>(["draft", "in_progress", "completed"]);
+    const allowed = new Set<string>(["draft", "in_progress", "submitted", "completed", "rejected"]);
     if (allowed.has(params.status)) {
       and.push({ status: params.status as CaseStatus });
     }
