@@ -58,6 +58,11 @@ model Case {
   status          CaseStatus @default(draft)
   propertyDetails String
   notes           String
+  feeType         String?
+  feeAmount       Float?
+  stampDuty       Float?
+  cvt             Float?
+  totalFee        Float?
   createdAt       DateTime   @default(now())
 
   client    Client     @relation(fields: [clientId], references: [id], onDelete: Cascade)
