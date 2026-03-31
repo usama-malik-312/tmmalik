@@ -7,6 +7,7 @@ import { ensureUsersSchema } from "./db/ensureUsersSchema.js";
 import { verifyDbEncoding } from "./db/verifyDbEncoding.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import activityRoutes from "./routes/activityRoutes.js";
+import archiveRoutes from "./routes/archiveRoutes.js";
 import automationRoutes from "./routes/automationRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import caseRoutes from "./routes/caseRoutes.js";
@@ -30,12 +31,14 @@ app.get("/health", (_req, res) => {
 app.use("/clients", clientRoutes);
 app.use("/cases", caseRoutes);
 app.use("/activities", activityRoutes);
+app.use("/archives", archiveRoutes);
 app.use("/automation", automationRoutes);
 app.use("/templates", templateRoutes);
 app.use("/documents", documentRoutes);
 app.use("/verify", verifyRoutes);
 app.use("/auth", authRoutes);
 app.use("/users", userRoutes);
+app.use("/uploads", express.static("uploads"));
 app.use(errorHandler);
 
 void (async () => {

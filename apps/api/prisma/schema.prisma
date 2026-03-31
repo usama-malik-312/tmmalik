@@ -48,7 +48,8 @@ model Client {
   notes     String?
   createdAt DateTime @default(now())
 
-  cases Case[]
+  cases    Case[]
+  archives Archive[]
 }
 
 model Case {
@@ -114,4 +115,20 @@ model User {
   activities Activity[]
 
   @@map("users")
+}
+
+model Archive {
+  id           Int      @id @default(autoincrement())
+  clientId     Int?
+  title        String
+  documentType String
+  fileUrl      String
+  metadata     Json?
+  createdAt    DateTime @default(now())
+
+  client Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  @@index([clientId])
+  @@index([documentType])
+  @@map("archives")
 }

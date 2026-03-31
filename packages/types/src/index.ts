@@ -66,3 +66,13 @@ export interface Document {
   verificationId: string;
   createdAt: string;
 }
+
+export interface Archive {
+  id: number;
+  clientId: number | null;
+  title: string;
+  documentType: string;
+  fileUrl: string;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+}

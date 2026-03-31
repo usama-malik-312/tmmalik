@@ -8,6 +8,7 @@ import DashboardPage from "./pages/DashboardPage";
 import DocumentsPage from "./pages/DocumentsPage";
 import LoginPage from "./pages/LoginPage";
 import ActivityPage from "./pages/ActivityPage";
+import ArchivesPage from "./pages/ArchivesPage";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import TemplatesPage from "./pages/TemplatesPage";
 import UsersPage from "./pages/UsersPage";
@@ -41,6 +42,7 @@ export default function App() {
         {isOwner ? <Route path="/users" element={<UsersPage />} /> : null}
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/activity" element={<ActivityPage />} />
+        <Route path="/archives" element={<ArchivesPage />} />
         <Route path="/settings" element={<PlaceholderPage title="Settings" subtitle="Office and user preferences." />} />
         <Route path="/support" element={<PlaceholderPage title="Support" subtitle="Help and contact options." />} />
       </Route>

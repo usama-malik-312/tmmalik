@@ -79,3 +79,14 @@ export interface User {
   userType: -1 | 1 | 2;
   createdAt: string;
 }
+
+export interface ArchiveItem {
+  id: number;
+  clientId: number | null;
+  title: string;
+  documentType: string;
+  fileUrl: string;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+  client?: Client | null;
+}

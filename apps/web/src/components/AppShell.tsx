@@ -5,6 +5,7 @@ import {
   FolderOpenOutlined,
   FormOutlined,
   HistoryOutlined,
+  InboxOutlined,
   TeamOutlined,
   UserOutlined,
 } from "@ant-design/icons";
@@ -51,6 +52,7 @@ export default function AppShell() {
     formatItem("/cases", <FolderOpenOutlined />, t("cases")),
     formatItem("/documents", <FileTextOutlined />, t("documentGenerator")),
     formatItem("/templates", <FormOutlined />, t("templates")),
+    formatItem("/archives", <InboxOutlined />, "Vault"),
     ...(isOwner ? [formatItem("/users", <UserOutlined />, t("users"))] : []),
     formatItem("/activity", <HistoryOutlined />, t("activity")),
   ];
