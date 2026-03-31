@@ -125,3 +125,25 @@ export const updateDocument = (id: number, data: Prisma.DocumentUpdateInput) =>
   });
 
 export const deleteDocument = (id: number) => prisma.document.delete({ where: { id } });
+
+export async function duplicateDocument(id: number) {
+  const existing = await prisma.document.findUnique({ where: { id } });
+  if (!existing) return null;
+  const verificationId = randomUUID();
+  const baseUrl = process.env.VERIFY_BASE_URL?.trim() || "http://localhost:5000";
+  const verificationUrl = `${baseUrl.replace(/\/$/, "")}/verify/${verificationId}`;
+  const qrCode = await QRCode.toDataURL(verificationUrl);
+  return prisma.document.create({
+    data: {
+      templateId: existing.templateId,
+      caseId: existing.caseId,
+      generatedContent: existing.generatedContent,
+      verificationId,
+      qrCode,
+    },
+    include: {
+      template: true,
+      case: { include: { client: true } },
+    },
+  });
+}

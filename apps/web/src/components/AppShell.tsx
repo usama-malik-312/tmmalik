@@ -52,7 +52,7 @@ export default function AppShell() {
     formatItem("/cases", <FolderOpenOutlined />, t("cases")),
     formatItem("/documents", <FileTextOutlined />, t("documentGenerator")),
     formatItem("/templates", <FormOutlined />, t("templates")),
-    formatItem("/archives", <InboxOutlined />, "Vault"),
+    formatItem("/archives", <InboxOutlined />, t("vault")),
     ...(isOwner ? [formatItem("/users", <UserOutlined />, t("users"))] : []),
     formatItem("/activity", <HistoryOutlined />, t("activity")),
   ];

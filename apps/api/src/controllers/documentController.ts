@@ -228,3 +228,30 @@ export async function deleteDocument(req: Request, res: Response, next: NextFunc
     next(error);
   }
 }
+
+export async function duplicateDocument(req: Request, res: Response, next: NextFunction) {
+  try {
+    const id = parseId(req.params.id);
+    const source = await service.getDocumentById(id);
+    if (!source) {
+      res.status(404).json({ success: false, message: "Document not found" });
+      return;
+    }
+    const actor = await resolveActorFromRequest(req);
+    const entity = await service.duplicateDocument(id);
+    if (!entity) {
+      res.status(404).json({ success: false, message: "Document not found" });
+      return;
+    }
+    await activityService.logDocumentDuplicated(
+      id,
+      entity.id,
+      source.template.name,
+      source.caseId ?? null,
+      actor
+    );
+    res.status(201).json({ success: true, data: entity });
+  } catch (error) {
+    next(error);
+  }
+}

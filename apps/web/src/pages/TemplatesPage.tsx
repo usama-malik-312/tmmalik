@@ -1,4 +1,4 @@
-import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
+import { CopyOutlined, DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Button,
@@ -123,6 +123,15 @@ export default function TemplatesPage() {
       message.success("Template and related generated documents removed.");
     },
     onError: () => message.error("Could not delete template."),
+  });
+
+  const duplicateMutation = useMutation({
+    mutationFn: (id: number) => api.post(`/templates/${id}/duplicate`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["templates"] });
+      queryClient.invalidateQueries({ queryKey: ["activities", "recent"] });
+      message.success("Template duplicated.");
+    },
   });
 
   useEffect(() => {
@@ -464,6 +473,16 @@ export default function TemplatesPage() {
                         cursor: "pointer",
                       }}
                       onClick={() => openEdit(r)}
+                    />
+                  </Tooltip>
+                  <Tooltip title="Duplicate">
+                    <CopyOutlined
+                      style={{
+                        fontSize: 16,
+                        color: "#0ea5e9",
+                        cursor: "pointer",
+                      }}
+                      onClick={() => duplicateMutation.mutate(r.id)}
                     />
                   </Tooltip>
                   <Popconfirm

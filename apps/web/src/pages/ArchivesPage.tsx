@@ -4,6 +4,7 @@ import { Button, Form, Input, Select, Space, Table, Typography, Upload, message 
 import type { UploadFile } from "antd";
 import { useState } from "react";
 import { api, unwrapPaged } from "../api";
+import { useI18n } from "../contexts/I18nContext";
 import type { ArchiveItem, Client } from "../types";
 
 type UploadFormValues = {
@@ -15,6 +16,7 @@ type UploadFormValues = {
 };
 
 export default function ArchivesPage() {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const [form] = Form.useForm<UploadFormValues>();
   const [fileList, setFileList] = useState<UploadFile[]>([]);
@@ -48,7 +50,7 @@ export default function ArchivesPage() {
   const uploadMutation = useMutation({
     mutationFn: async (values: UploadFormValues) => {
       if (!fileList[0]?.originFileObj) {
-        throw new Error("Please select a file.");
+        throw new Error(t("pleaseSelectFile"));
       }
       const body = new FormData();
       body.append("file", fileList[0].originFileObj);
@@ -62,31 +64,31 @@ export default function ArchivesPage() {
       });
     },
     onSuccess: () => {
-      message.success("Archive uploaded.");
+      message.success(t("archiveUploaded"));
       queryClient.invalidateQueries({ queryKey: ["archives"] });
       form.resetFields();
       setFileList([]);
     },
     onError: (err: unknown) => {
-      message.error(err instanceof Error ? err.message : "Upload failed");
+      message.error(err instanceof Error ? err.message : t("uploadFailed"));
     },
   });
 
   return (
     <Space direction="vertical" size="large" style={{ width: "100%" }}>
       <Typography.Title level={3} style={{ margin: 0 }}>
-        Archive / Vault
+        {t("archiveVault")}
       </Typography.Title>
 
       <Form form={form} layout="vertical">
         <Space wrap style={{ width: "100%" }}>
-          <Form.Item name="title" label="Title" rules={[{ required: true }]} style={{ width: 240 }}>
+          <Form.Item name="title" label={t("title")} rules={[{ required: true }]} style={{ width: 240 }}>
             <Input />
           </Form.Item>
-          <Form.Item name="documentType" label="Document type" rules={[{ required: true }]} style={{ width: 220 }}>
+          <Form.Item name="documentType" label={t("documentType")} rules={[{ required: true }]} style={{ width: 220 }}>
             <Input placeholder="Sale deed, mutation, etc." />
           </Form.Item>
-          <Form.Item name="clientId" label="Client (optional)" style={{ width: 260 }}>
+          <Form.Item name="clientId" label={t("clientOptional")} style={{ width: 260 }}>
             <Select
               allowClear
               showSearch
@@ -94,20 +96,20 @@ export default function ArchivesPage() {
               options={(clientsQuery.data?.items ?? []).map((c) => ({ value: c.id, label: `${c.name} — ${c.cnic}` }))}
             />
           </Form.Item>
-          <Form.Item name="cnic" label="CNIC (optional)" style={{ width: 220 }}>
+          <Form.Item name="cnic" label={t("cnicOptional")} style={{ width: 220 }}>
             <Input placeholder="11111-1111111-1" />
           </Form.Item>
-          <Form.Item name="name" label="Name (optional)" style={{ width: 220 }}>
+          <Form.Item name="name" label={t("nameOptional")} style={{ width: 220 }}>
             <Input />
           </Form.Item>
-          <Form.Item label="Scanned file" required>
+          <Form.Item label={t("scannedFile")} required>
             <Upload
               beforeUpload={() => false}
               maxCount={1}
               fileList={fileList}
               onChange={({ fileList: fl }) => setFileList(fl)}
             >
-              <Button icon={<UploadOutlined />}>Select file</Button>
+              <Button icon={<UploadOutlined />}>{t("selectFile")}</Button>
             </Upload>
           </Form.Item>
         </Space>
@@ -119,7 +121,7 @@ export default function ArchivesPage() {
             await uploadMutation.mutateAsync(values);
           }}
         >
-          Upload to Vault
+          {t("uploadToVault")}
         </Button>
       </Form>
 
@@ -127,7 +129,7 @@ export default function ArchivesPage() {
         <Input
           allowClear
           value={cnic}
-          placeholder="Search by CNIC"
+          placeholder={t("searchByCnic")}
           style={{ width: 200 }}
           onChange={(e) => {
             setCnic(e.target.value);
@@ -137,7 +139,7 @@ export default function ArchivesPage() {
         <Input
           allowClear
           value={name}
-          placeholder="Search by Name"
+          placeholder={t("searchByName")}
           style={{ width: 200 }}
           onChange={(e) => {
             setName(e.target.value);
@@ -147,7 +149,7 @@ export default function ArchivesPage() {
         <Input
           allowClear
           value={documentType}
-          placeholder="Search by Document type"
+          placeholder={t("searchByDocumentType")}
           style={{ width: 220 }}
           onChange={(e) => {
             setDocumentType(e.target.value);
@@ -171,15 +173,15 @@ export default function ArchivesPage() {
           },
         }}
         columns={[
-          { title: "Title", dataIndex: "title" },
-          { title: "Type", dataIndex: "documentType" },
-          { title: "Client", render: (_, r: ArchiveItem) => r.client?.name ?? "—" },
-          { title: "Date", render: (_, r: ArchiveItem) => new Date(r.createdAt).toLocaleString() },
+          { title: t("title"), dataIndex: "title" },
+          { title: t("type"), dataIndex: "documentType" },
+          { title: t("clients"), render: (_, r: ArchiveItem) => r.client?.name ?? "—" },
+          { title: t("date"), render: (_, r: ArchiveItem) => new Date(r.createdAt).toLocaleString() },
           {
-            title: "Download",
+            title: t("download"),
             render: (_, r: ArchiveItem) => (
               <Button icon={<DownloadOutlined />} onClick={() => window.open(r.fileUrl, "_blank", "noopener,noreferrer")}>
-                Download
+                {t("download")}
               </Button>
             ),
           },

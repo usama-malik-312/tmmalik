@@ -49,6 +49,20 @@ export async function getTemplatesPaged(params: TemplateListParams) {
 export const getTemplateById = (id: number) => prisma.template.findUnique({ where: { id } });
 export const updateTemplate = (id: number, data: Prisma.TemplateUpdateInput) =>
   prisma.template.update({ where: { id }, data });
+
+export async function duplicateTemplate(id: number) {
+  const existing = await prisma.template.findUnique({ where: { id } });
+  if (!existing) return null;
+  return prisma.template.create({
+    data: {
+      name: `${existing.name} (Copy)`,
+      content: existing.content,
+      language: existing.language,
+      fields: existing.fields as Prisma.InputJsonValue,
+    },
+  });
+}
+
 export async function deleteTemplate(id: number): Promise<number> {
   return prisma.$transaction(async (tx) => {
     const docCount = await tx.document.count({ where: { templateId: id } });

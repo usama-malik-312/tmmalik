@@ -92,3 +92,19 @@ export async function deleteTemplate(req: Request, res: Response, next: NextFunc
     next(error);
   }
 }
+
+export async function duplicateTemplate(req: Request, res: Response, next: NextFunction) {
+  try {
+    const id = parseId(req.params.id);
+    const actor = await resolveActorFromRequest(req);
+    const entity = await service.duplicateTemplate(id);
+    if (!entity) {
+      res.status(404).json({ success: false, message: "Template not found" });
+      return;
+    }
+    await activityService.logTemplateDuplicated(id, entity.id, entity.name, actor);
+    res.status(201).json({ success: true, data: entity });
+  } catch (error) {
+    next(error);
+  }
+}

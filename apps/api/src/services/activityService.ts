@@ -143,6 +143,35 @@ export async function logDocumentDeleted(
   );
 }
 
+export async function logDocumentDuplicated(
+  sourceDocumentId: number,
+  newDocumentId: number,
+  templateName: string,
+  caseId: number | null,
+  actor: ActorSnapshot
+) {
+  if (caseId != null) {
+    return logActivity(
+      {
+        entityType: ActivityEntityType.case,
+        entityId: String(caseId),
+        action: "document_duplicated",
+        metadata: { sourceDocumentId, documentId: newDocumentId, templateName },
+      },
+      actor
+    );
+  }
+  return logActivity(
+    {
+      entityType: ActivityEntityType.document,
+      entityId: String(newDocumentId),
+      action: "document_duplicated",
+      metadata: { sourceDocumentId, templateName },
+    },
+    actor
+  );
+}
+
 export async function logTemplateCreated(templateId: number, name: string, actor: ActorSnapshot) {
   return logActivity(
     {
@@ -162,6 +191,23 @@ export async function logTemplateUpdated(templateId: number, name: string, actor
       entityId: String(templateId),
       action: "template_updated",
       metadata: { name },
+    },
+    actor
+  );
+}
+
+export async function logTemplateDuplicated(
+  sourceTemplateId: number,
+  newTemplateId: number,
+  name: string,
+  actor: ActorSnapshot
+) {
+  return logActivity(
+    {
+      entityType: ActivityEntityType.template,
+      entityId: String(newTemplateId),
+      action: "template_duplicated",
+      metadata: { sourceTemplateId, name },
     },
     actor
   );

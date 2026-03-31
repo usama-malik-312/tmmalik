@@ -952,6 +952,11 @@ export default function DocumentsPage() {
                             label: "Verify",
                           },
                           {
+                            key: "duplicate",
+                            icon: <CopyOutlined />,
+                            label: "Duplicate",
+                          },
+                          {
                             key: "print",
                             icon: <PrinterOutlined />,
                             label: "Print",
@@ -989,6 +994,14 @@ export default function DocumentsPage() {
                                 }
                                 if (key === "verify") {
                                   window.open(`${verifyBase}/verify/${r.verificationId}`, "_blank", "noopener,noreferrer");
+                                  return;
+                                }
+                                if (key === "duplicate") {
+                                  void api.post(`/documents/${r.id}/duplicate`).then(() => {
+                                    queryClient.invalidateQueries({ queryKey: ["documents"] });
+                                    queryClient.invalidateQueries({ queryKey: ["activities", "recent"] });
+                                    message.success("Document duplicated.");
+                                  });
                                   return;
                                 }
                                 if (key === "delete") {
