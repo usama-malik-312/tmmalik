@@ -13,6 +13,67 @@ function parseId(value: string | string[] | undefined): number {
   return id;
 }
 
+function wantsHtml(req: Request): boolean {
+  if (String(req.query.format ?? "").toLowerCase() === "json") return false;
+  const accept = String(req.headers.accept ?? "");
+  return accept.includes("text/html") || accept.includes("*/*");
+}
+
+function escapeHtml(input: string): string {
+  return input
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function renderVerifyPage(args: {
+  title: string;
+  badge: string;
+  badgeColor: string;
+  rows: Array<{ label: string; value: string }>;
+}) {
+  const rowsHtml = args.rows
+    .map(
+      (r) =>
+        `<tr><th>${escapeHtml(r.label)}</th><td>${escapeHtml(r.value)}</td></tr>`
+    )
+    .join("");
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>${escapeHtml(args.title)}</title>
+  <style>
+    body { font-family: Segoe UI, Arial, sans-serif; background:#f5f7fb; margin:0; }
+    .wrap { max-width: 760px; margin: 48px auto; padding: 0 16px; }
+    .card { background:#fff; border-radius:14px; box-shadow:0 8px 24px rgba(15,23,42,.08); padding:24px; }
+    .badge { display:inline-block; padding:6px 12px; border-radius:999px; color:#fff; font-weight:600; background:${args.badgeColor}; }
+    h1 { margin:12px 0 8px; font-size:24px; color:#0f172a; }
+    p { margin:0 0 16px; color:#475569; }
+    table { width:100%; border-collapse: collapse; margin-top: 8px; }
+    th, td { text-align:left; padding:10px 8px; border-bottom:1px solid #e2e8f0; vertical-align:top; }
+    th { width:220px; color:#334155; font-weight:600; }
+    td { color:#0f172a; word-break: break-word; }
+    .footer { margin-top:18px; color:#64748b; font-size:12px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <span class="badge">${escapeHtml(args.badge)}</span>
+      <h1>${escapeHtml(args.title)}</h1>
+      <p>Document verification details from Legal & Property Management System.</p>
+      <table>${rowsHtml}</table>
+      <div class="footer">Tip: append <code>?format=json</code> for API JSON response.</div>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
 export async function generateDocument(req: Request, res: Response, next: NextFunction) {
   try {
     const payload = generateDocumentSchema.parse(req.body);
@@ -74,12 +135,51 @@ export async function verifyDocument(req: Request, res: Response, next: NextFunc
   try {
     const verificationId = String(req.params.id ?? "").trim();
     if (!verificationId) {
+      if (wantsHtml(req)) {
+        res.status(400).type("html").send(
+          renderVerifyPage({
+            title: "Invalid verification link",
+            badge: "INVALID",
+            badgeColor: "#f59e0b",
+            rows: [{ label: "Reason", value: "Verification id is missing or invalid." }],
+          })
+        );
+        return;
+      }
       res.status(400).json({ success: false, message: "Invalid verification id" });
       return;
     }
     const entity = await service.getDocumentByVerificationId(verificationId);
     if (!entity) {
+      if (wantsHtml(req)) {
+        res.status(404).type("html").send(
+          renderVerifyPage({
+            title: "Document not found",
+            badge: "NOT FOUND",
+            badgeColor: "#ef4444",
+            rows: [{ label: "Verification ID", value: verificationId }],
+          })
+        );
+        return;
+      }
       res.status(404).json({ success: false, message: "Document not found" });
+      return;
+    }
+    if (wantsHtml(req)) {
+      res.status(200).type("html").send(
+        renderVerifyPage({
+          title: "Document verified",
+          badge: "VALID",
+          badgeColor: "#16a34a",
+          rows: [
+            { label: "Verification ID", value: entity.verificationId },
+            { label: "Document ID", value: String(entity.id) },
+            { label: "Template", value: entity.template?.name ?? "N/A" },
+            { label: "Case", value: entity.caseId != null ? `#${entity.caseId}` : "Not linked" },
+            { label: "Created At", value: new Date(entity.createdAt).toLocaleString() },
+          ],
+        })
+      );
       return;
     }
     res.json({

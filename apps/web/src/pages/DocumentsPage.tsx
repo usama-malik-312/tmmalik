@@ -1,4 +1,15 @@
-import { DeleteOutlined, EditOutlined, EyeOutlined, FileTextOutlined, MoreOutlined, PrinterOutlined, ThunderboltOutlined } from "@ant-design/icons";
+import {
+  CopyOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  EyeOutlined,
+  FileTextOutlined,
+  MoreOutlined,
+  PrinterOutlined,
+  ShareAltOutlined,
+  ThunderboltOutlined,
+  WhatsAppOutlined,
+} from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Button,
@@ -669,6 +680,21 @@ export default function DocumentsPage() {
 
   const docPaged = documentsQuery.data;
   const verifyBase = String(api.defaults.baseURL ?? "http://localhost:5000").replace(/\/$/, "");
+  const appBase = window.location.origin;
+
+  const copyLink = async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      message.success("Link copied.");
+    } catch {
+      message.error("Unable to copy link.");
+    }
+  };
+
+  const openWhatsAppWithText = (text: string) => {
+    const waUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(waUrl, "_blank", "noopener,noreferrer");
+  };
 
   return (
     <>
@@ -762,40 +788,52 @@ export default function DocumentsPage() {
             key: "fee-calculator",
             label: "Fee Calculator",
             children: (
-              <Card title="Fee Calculator" bordered={false}>
-                <Form form={feeForm} layout="vertical" initialValues={{ type: "general" }}>
-                  <Form.Item name="amount" label="Amount" rules={[{ required: true }]}>
-                    <Input type="number" min={1} step={1} />
-                  </Form.Item>
-                  <Form.Item name="type" label="Type" rules={[{ required: true }]}>
-                    <Select
-                      options={[
-                        { value: "general", label: "general" },
-                        { value: "sale", label: "sale" },
-                        { value: "transfer", label: "transfer" },
-                        { value: "lease", label: "lease" },
-                      ]}
-                    />
-                  </Form.Item>
-                  <Button
-                    type="primary"
-                    loading={feeMutation.isPending}
-                    onClick={async () => {
-                      const values = await feeForm.validateFields();
-                      await feeMutation.mutateAsync({ amount: Number(values.amount), type: String(values.type) });
-                    }}
-                  >
-                    Calculate
-                  </Button>
-                </Form>
-                {feeResult ? (
-                  <div style={{ marginTop: 16 }}>
-                    <Typography.Paragraph style={{ marginBottom: 8 }}>Stamp Duty: {feeResult.stampDuty}</Typography.Paragraph>
-                    <Typography.Paragraph style={{ marginBottom: 8 }}>CVT: {feeResult.cvt}</Typography.Paragraph>
-                    <Typography.Text strong>Total: {feeResult.total}</Typography.Text>
-                  </div>
-                ) : null}
-              </Card>
+              <Row gutter={[16, 16]}>
+                <Col xs={24} lg={12}>
+                  <Card title="Fee Calculator" bordered={false}>
+                    <Form form={feeForm} layout="vertical" initialValues={{ type: "general" }}>
+                      <Form.Item name="amount" label="Amount" rules={[{ required: true }]}>
+                        <Input type="number" min={1} step={1} />
+                      </Form.Item>
+                      <Form.Item name="type" label="Type" rules={[{ required: true }]}>
+                        <Select
+                          options={[
+                            { value: "general", label: "general" },
+                            { value: "sale", label: "sale" },
+                            { value: "transfer", label: "transfer" },
+                            { value: "lease", label: "lease" },
+                          ]}
+                        />
+                      </Form.Item>
+                      <Button
+                        type="primary"
+                        loading={feeMutation.isPending}
+                        onClick={async () => {
+                          const values = await feeForm.validateFields();
+                          await feeMutation.mutateAsync({ amount: Number(values.amount), type: String(values.type) });
+                        }}
+                      >
+                        Calculate
+                      </Button>
+                    </Form>
+                    {feeResult ? (
+                      <div style={{ marginTop: 16 }}>
+                        <Typography.Paragraph style={{ marginBottom: 8 }}>Stamp Duty: {feeResult.stampDuty}</Typography.Paragraph>
+                        <Typography.Paragraph style={{ marginBottom: 8 }}>CVT: {feeResult.cvt}</Typography.Paragraph>
+                        <Typography.Text strong>Total: {feeResult.total}</Typography.Text>
+                      </div>
+                    ) : null}
+                  </Card>
+                </Col>
+                <Col xs={24} lg={12}>
+                  <Card title="Share Demo" bordered={false}>
+                    <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
+                      For demo, use the Share dropdown in Generated documents. It opens WhatsApp Web with prefilled text
+                      and lets you copy the same link.
+                    </Typography.Paragraph>
+                  </Card>
+                </Col>
+              </Row>
             ),
           },
           {
@@ -850,6 +888,46 @@ export default function DocumentsPage() {
                           <Typography.Paragraph ellipsis={{ rows: 2 }} style={{ maxWidth: 280, margin: 0 }}>
                             {plainText}
                           </Typography.Paragraph>
+                        );
+                      },
+                    },
+                    {
+                      title: "Share",
+                      width: 90,
+                      render: (_, r: GeneratedDocument) => {
+                        const verifyUrl = `${verifyBase}/verify/${r.verificationId}`;
+                        const appDocUrl = `${appBase}/documents`;
+                        const shareText = `Document verification link: ${verifyUrl}\nView in app: ${appDocUrl}`;
+                        const shareItems: MenuProps["items"] = [
+                          {
+                            key: "wa",
+                            icon: <WhatsAppOutlined />,
+                            label: "Send via WhatsApp",
+                          },
+                          {
+                            key: "copy",
+                            icon: <CopyOutlined />,
+                            label: "Copy Link",
+                          },
+                        ];
+                        return (
+                          <Dropdown
+                            trigger={["click"]}
+                            menu={{
+                              items: shareItems,
+                              onClick: ({ key }) => {
+                                if (key === "wa") {
+                                  openWhatsAppWithText(shareText);
+                                  return;
+                                }
+                                if (key === "copy") {
+                                  void copyLink(verifyUrl);
+                                }
+                              },
+                            }}
+                          >
+                            <Button type="text" icon={<ShareAltOutlined />} />
+                          </Dropdown>
                         );
                       },
                     },

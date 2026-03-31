@@ -58,6 +58,11 @@ Updated `Documents` page:
 - New **Fee Calculator** tab
   - amount + type input
   - shows stamp duty / CVT / total
+- Added **Share Demo** card in the same tab (frontend guidance for demo sharing)
+- Added frontend-only demo sharing dropdowns (no paid gateway):
+  - **Cases list**: `Send via WhatsApp` + `Copy Link`
+  - **Generated documents list**: `Send via WhatsApp` + `Copy Link`
+  - WhatsApp opens `wa.me` with prefilled text, so it uses logged-in WhatsApp Web session
 - Generated documents table now shows:
   - verification ID
   - **Verify document** action

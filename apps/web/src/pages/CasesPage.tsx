@@ -1,6 +1,7 @@
-import { PlusOutlined } from "@ant-design/icons";
+import { CopyOutlined, PlusOutlined, ShareAltOutlined, WhatsAppOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button, Form, Input, Modal, Popconfirm, Select, Space, Table, Tag, Tooltip, Typography } from "antd";
+import { Button, Dropdown, Form, Input, Modal, Popconfirm, Select, Space, Table, Tag, Tooltip, Typography, message } from "antd";
+import type { MenuProps } from "antd";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { api, unwrapPaged } from "../api";
@@ -79,6 +80,21 @@ export default function CasesPage() {
   });
 
   const caseRows = casesQuery.data;
+  const appBase = window.location.origin;
+
+  const copyLink = async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      message.success("Link copied.");
+    } catch {
+      message.error("Unable to copy link.");
+    }
+  };
+
+  const openWhatsAppWithText = (text: string) => {
+    const waUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(waUrl, "_blank", "noopener,noreferrer");
+  };
 
   return (
     <>
@@ -174,6 +190,37 @@ export default function CasesPage() {
             render: (_, record: CaseItem) => (
               <Link to={`/cases/${record.id}`}>{record.id}</Link>
             ),
+          },
+          {
+            title: "Share",
+            width: 90,
+            render: (_, record: CaseItem) => {
+              const caseUrl = `${appBase}/cases/${record.id}`;
+              const shareText = `Case #${record.id} (${record.caseType})\n${caseUrl}`;
+              const items: MenuProps["items"] = [
+                { key: "wa", icon: <WhatsAppOutlined />, label: "Send via WhatsApp" },
+                { key: "copy", icon: <CopyOutlined />, label: "Copy Link" },
+              ];
+              return (
+                <Dropdown
+                  trigger={["click"]}
+                  menu={{
+                    items,
+                    onClick: ({ key }) => {
+                      if (key === "wa") {
+                        openWhatsAppWithText(shareText);
+                        return;
+                      }
+                      if (key === "copy") {
+                        void copyLink(caseUrl);
+                      }
+                    },
+                  }}
+                >
+                  <Button type="text" icon={<ShareAltOutlined />} />
+                </Dropdown>
+              );
+            },
           },
           { title: t("clients"), render: (_, record: CaseItem) => record.client?.name ?? "-" },
           { title: "Case Type", dataIndex: "caseType" },
