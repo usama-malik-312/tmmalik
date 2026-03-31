@@ -1,4 +1,6 @@
 import { Prisma } from "@prisma/client";
+import { randomUUID } from "crypto";
+import QRCode from "qrcode";
 import { prisma } from "../config/prisma.js";
 
 function replacePlaceholders(input: string, map: Record<string, string>) {
@@ -34,12 +36,18 @@ export async function generateDocument(args: GenerateArgs) {
       ? args.contentOverride
       : template.content;
   const generatedContent = replacePlaceholders(source, args.formData);
+  const verificationId = randomUUID();
+  const baseUrl = process.env.VERIFY_BASE_URL?.trim() || "http://localhost:5000";
+  const verificationUrl = `${baseUrl.replace(/\/$/, "")}/verify/${verificationId}`;
+  const qrCode = await QRCode.toDataURL(verificationUrl);
 
   return prisma.document.create({
     data: {
       templateId: args.templateId,
       caseId: args.caseId ?? null,
       generatedContent,
+      verificationId,
+      qrCode,
     },
     include: {
       template: true,
@@ -91,6 +99,15 @@ export const getDocuments = () =>
 export const getDocumentById = (id: number) =>
   prisma.document.findUnique({
     where: { id },
+    include: {
+      template: true,
+      case: { include: { client: true } },
+    },
+  });
+
+export const getDocumentByVerificationId = (verificationId: string) =>
+  prisma.document.findUnique({
+    where: { verificationId },
     include: {
       template: true,
       case: { include: { client: true } },

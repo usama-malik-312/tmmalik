@@ -7,6 +7,7 @@ import { ensureUsersSchema } from "./db/ensureUsersSchema.js";
 import { verifyDbEncoding } from "./db/verifyDbEncoding.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import activityRoutes from "./routes/activityRoutes.js";
+import automationRoutes from "./routes/automationRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import caseRoutes from "./routes/caseRoutes.js";
 import clientRoutes from "./routes/clientRoutes.js";
@@ -28,6 +29,7 @@ app.get("/health", (_req, res) => {
 app.use("/clients", clientRoutes);
 app.use("/cases", caseRoutes);
 app.use("/activities", activityRoutes);
+app.use("/automation", automationRoutes);
 app.use("/templates", templateRoutes);
 app.use("/documents", documentRoutes);
 app.use("/auth", authRoutes);

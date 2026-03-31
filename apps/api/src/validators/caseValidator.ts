@@ -6,4 +6,9 @@ export const caseSchema = z.object({
   status: z.enum(["draft", "in_progress", "submitted", "completed", "rejected"]).optional(),
   propertyDetails: z.string().min(3),
   notes: z.string().min(1),
+  feeType: z.string().min(1).optional(),
+  feeAmount: z.coerce.number().nonnegative().optional(),
+  stampDuty: z.coerce.number().nonnegative().optional(),
+  cvt: z.coerce.number().nonnegative().optional(),
+  totalFee: z.coerce.number().nonnegative().optional(),
 });

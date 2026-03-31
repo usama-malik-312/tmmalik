@@ -30,6 +30,11 @@ export interface CaseItem {
   status: CaseStatus;
   propertyDetails: string;
   notes: string;
+  feeType?: string | null;
+  feeAmount?: number | null;
+  stampDuty?: number | null;
+  cvt?: number | null;
+  totalFee?: number | null;
   createdAt: string;
   client?: Client;
 }

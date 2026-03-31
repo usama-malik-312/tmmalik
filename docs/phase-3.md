@@ -54,6 +54,13 @@ Case timeline (`GET /cases/:id/activities`) lists rows with `entityType = case` 
 
 - **`/activity`** — Global feed: time, **By** (performer), description, entity, quick links.
 - **`/cases/:id`** — Timeline: description + performer + timestamp.
+- **Internal Notes** — On case detail, editable notes card for private case notes (`notes` field).
+- **Basic Fee Tracking** — On case detail, fee amount/type input with “Calculate and save” to persist:
+  - `feeAmount`
+  - `feeType`
+  - `stampDuty`
+  - `cvt`
+  - `totalFee`
 - React Query invalidates `["activities", "recent"]` (and related case queries) after mutations so feeds stay current.
 
 ## How to test
@@ -62,3 +69,5 @@ Case timeline (`GET /cases/:id/activities`) lists rows with `entityType = case` 
 2. Log in (so `x-user-id` is sent) — create/update clients, templates, cases, documents — confirm **By** shows your name on `/activity` and on case timelines.
 3. Generate a document **without** a case — event appears on `/activity` with `document` entity.
 4. Delete a template with linked documents — `template_deleted` shows cascade count in the description.
+5. Open `/cases/:id` and update **Internal Notes**; confirm notes persist after refresh.
+6. On `/cases/:id`, use **Basic Fee Tracking** > set amount/type > **Calculate and save**; confirm stored fee breakdown appears on reload.
