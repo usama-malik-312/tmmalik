@@ -70,6 +70,33 @@ export async function getDocumentById(req: Request, res: Response, next: NextFun
   }
 }
 
+export async function verifyDocument(req: Request, res: Response, next: NextFunction) {
+  try {
+    const verificationId = String(req.params.id ?? "").trim();
+    if (!verificationId) {
+      res.status(400).json({ success: false, message: "Invalid verification id" });
+      return;
+    }
+    const entity = await service.getDocumentByVerificationId(verificationId);
+    if (!entity) {
+      res.status(404).json({ success: false, message: "Document not found" });
+      return;
+    }
+    res.json({
+      success: true,
+      data: {
+        id: entity.id,
+        verificationId: entity.verificationId,
+        templateName: entity.template?.name ?? null,
+        caseId: entity.caseId,
+        createdAt: entity.createdAt,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function updateDocument(req: Request, res: Response, next: NextFunction) {
   try {
     const id = parseId(req.params.id);

@@ -111,6 +111,8 @@ export default function DocumentsPage() {
   const [docSearch, setDocSearch] = useState("");
   const [viewDoc, setViewDoc] = useState<GeneratedDocument | null>(null);
   const [editingDocId, setEditingDocId] = useState<number | null>(null);
+  const [feeForm] = Form.useForm<{ amount: number; type: string }>();
+  const [feeResult, setFeeResult] = useState<{ stampDuty: number; cvt: number; total: number } | null>(null);
 
   const templatesQuery = useQuery({
     queryKey: ["templates", "docgen"],
@@ -180,6 +182,14 @@ export default function DocumentsPage() {
       queryClient.invalidateQueries({ queryKey: ["cases"] });
       if (editingDocId != null) setEditingDocId(null);
       message.success("Document deleted.");
+    },
+  });
+
+  const feeMutation = useMutation({
+    mutationFn: (payload: { amount: number; type: string }) => api.post("/automation/fees/calculate", payload),
+    onSuccess: (res) => {
+      setFeeResult(res.data?.data ?? null);
+      message.success("Fee breakdown calculated.");
     },
   });
 
@@ -658,6 +668,7 @@ export default function DocumentsPage() {
   );
 
   const docPaged = documentsQuery.data;
+  const verifyBase = String(api.defaults.baseURL ?? "http://localhost:5000").replace(/\/$/, "");
 
   return (
     <>
@@ -748,6 +759,46 @@ export default function DocumentsPage() {
         items={[
           { key: "generator", label: "Document Generator", children: generator },
           {
+            key: "fee-calculator",
+            label: "Fee Calculator",
+            children: (
+              <Card title="Fee Calculator" bordered={false}>
+                <Form form={feeForm} layout="vertical" initialValues={{ type: "general" }}>
+                  <Form.Item name="amount" label="Amount" rules={[{ required: true }]}>
+                    <Input type="number" min={1} step={1} />
+                  </Form.Item>
+                  <Form.Item name="type" label="Type" rules={[{ required: true }]}>
+                    <Select
+                      options={[
+                        { value: "general", label: "general" },
+                        { value: "sale", label: "sale" },
+                        { value: "transfer", label: "transfer" },
+                        { value: "lease", label: "lease" },
+                      ]}
+                    />
+                  </Form.Item>
+                  <Button
+                    type="primary"
+                    loading={feeMutation.isPending}
+                    onClick={async () => {
+                      const values = await feeForm.validateFields();
+                      await feeMutation.mutateAsync({ amount: Number(values.amount), type: String(values.type) });
+                    }}
+                  >
+                    Calculate
+                  </Button>
+                </Form>
+                {feeResult ? (
+                  <div style={{ marginTop: 16 }}>
+                    <Typography.Paragraph style={{ marginBottom: 8 }}>Stamp Duty: {feeResult.stampDuty}</Typography.Paragraph>
+                    <Typography.Paragraph style={{ marginBottom: 8 }}>CVT: {feeResult.cvt}</Typography.Paragraph>
+                    <Typography.Text strong>Total: {feeResult.total}</Typography.Text>
+                  </div>
+                ) : null}
+              </Card>
+            ),
+          },
+          {
             key: "history",
             label: "Generated documents",
             children: (
@@ -818,6 +869,11 @@ export default function DocumentsPage() {
                             label: "Edit",
                           },
                           {
+                            key: "verify",
+                            icon: <EyeOutlined />,
+                            label: "Verify",
+                          },
+                          {
                             key: "print",
                             icon: <PrinterOutlined />,
                             label: "Print",
@@ -853,6 +909,10 @@ export default function DocumentsPage() {
                                   printDocument(r.generatedContent);
                                   return;
                                 }
+                                if (key === "verify") {
+                                  window.open(`${verifyBase}/verify/${r.verificationId}`, "_blank", "noopener,noreferrer");
+                                  return;
+                                }
                                 if (key === "delete") {
                                   void deleteMutation.mutateAsync(r.id);
                                 }
@@ -863,6 +923,21 @@ export default function DocumentsPage() {
                           </Dropdown>
                         );
                       },
+                    },
+                    {
+                      title: "Verification",
+                      render: (_, r: GeneratedDocument) => (
+                        <Space direction="vertical" size={2}>
+                          <Typography.Text code>{r.verificationId}</Typography.Text>
+                          <Button
+                            size="small"
+                            type="link"
+                            onClick={() => window.open(`${verifyBase}/verify/${r.verificationId}`, "_blank", "noopener,noreferrer")}
+                          >
+                            Verify document
+                          </Button>
+                        </Space>
+                      ),
                     },
                     {
                       title: "Created",
@@ -879,18 +954,38 @@ export default function DocumentsPage() {
                   destroyOnClose
                 >
                   {viewDoc ? (
-                    <Typography.Paragraph
-                      style={{
-                        whiteSpace: "pre-wrap",
-                        wordBreak: "break-word",
-                        maxHeight: "70vh",
-                        overflow: "auto",
-                        fontFamily: '"Times New Roman", Times, serif',
-                        marginBottom: 0,
-                      }}
-                    >
-                      {viewDoc.generatedContent}
-                    </Typography.Paragraph>
+                    <Space direction="vertical" style={{ width: "100%" }} size="middle">
+                      <Space>
+                        <Typography.Text code>{viewDoc.verificationId}</Typography.Text>
+                        <Button
+                          type="link"
+                          onClick={() =>
+                            window.open(`${verifyBase}/verify/${viewDoc.verificationId}`, "_blank", "noopener,noreferrer")
+                          }
+                        >
+                          Verify document
+                        </Button>
+                      </Space>
+                      {viewDoc.qrCode ? (
+                        <img
+                          src={viewDoc.qrCode}
+                          alt="Document verification QR"
+                          style={{ width: 160, height: 160, border: "1px solid #eee", padding: 8, borderRadius: 8 }}
+                        />
+                      ) : null}
+                      <Typography.Paragraph
+                        style={{
+                          whiteSpace: "pre-wrap",
+                          wordBreak: "break-word",
+                          maxHeight: "70vh",
+                          overflow: "auto",
+                          fontFamily: '"Times New Roman", Times, serif',
+                          marginBottom: 0,
+                        }}
+                      >
+                        {viewDoc.generatedContent}
+                      </Typography.Paragraph>
+                    </Space>
                   ) : null}
                 </Modal>
               </>

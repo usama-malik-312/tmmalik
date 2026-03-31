@@ -58,6 +58,8 @@ export interface GeneratedDocument {
   templateId: number;
   caseId: number | null;
   generatedContent: string;
+  qrCode?: string | null;
+  verificationId: string;
   createdAt: string;
   template?: Template;
   case?: CaseItem | null;

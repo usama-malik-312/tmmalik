@@ -57,5 +57,7 @@ export interface Document {
   templateId: number;
   caseId: number | null;
   generatedContent: string;
+  qrCode?: string | null;
+  verificationId: string;
   createdAt: string;
 }
