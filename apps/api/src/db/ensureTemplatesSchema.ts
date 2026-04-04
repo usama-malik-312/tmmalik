@@ -23,7 +23,7 @@ export async function ensureTemplatesSchema(): Promise<void> {
         "id" SERIAL NOT NULL,
         "name" TEXT NOT NULL,
         "content" TEXT NOT NULL,
-        "language" TEXT DEFAULT 'ur',
+        "language" TEXT DEFAULT 'en',
         "fields" JSONB NOT NULL DEFAULT '[]',
         "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
         CONSTRAINT "templates_pkey" PRIMARY KEY ("id")
@@ -38,7 +38,10 @@ export async function ensureTemplatesSchema(): Promise<void> {
   await prisma.$executeRawUnsafe(
     `ALTER TABLE "templates" ADD COLUMN IF NOT EXISTS "fields" JSONB DEFAULT '[]'::jsonb`
   );
-  await prisma.$executeRawUnsafe(`ALTER TABLE "templates" ADD COLUMN IF NOT EXISTS "language" TEXT DEFAULT 'ur'`);
+  await prisma.$executeRawUnsafe(`ALTER TABLE "templates" ADD COLUMN IF NOT EXISTS "language" TEXT DEFAULT 'en'`);
+  await prisma.$executeRawUnsafe(
+    `ALTER TABLE "templates" ALTER COLUMN "language" SET DEFAULT 'en'`
+  );
 
   await prisma.$executeRawUnsafe(`
     DO $$

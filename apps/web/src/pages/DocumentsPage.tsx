@@ -261,13 +261,13 @@ export default function DocumentsPage() {
     message.info("Form reset.");
   };
 
-  const isRtlText = (selectedTemplate?.language ?? "ur") === "ur";
+  const isRtlText = (selectedTemplate?.language ?? "en") === "ur";
   const editorConfig = useMemo(
     () => ({
       readonly: false,
       height: 400,
       direction: isRtlText ? ("rtl" as const) : ("ltr" as const),
-      language: selectedTemplate?.language ?? "ur",
+      language: selectedTemplate?.language ?? "en",
       style: {
         fontFamily: '"Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", "Noto Naskh Arabic", "Segoe UI", Tahoma, sans-serif',
         direction: isRtlText ? "rtl" : "ltr",
@@ -370,7 +370,7 @@ export default function DocumentsPage() {
       return;
     }
     const htmlToPrint = getPreviewContentHTML(body, previewValues);
-    const docLang = selectedTemplate?.language ?? "ur";
+    const docLang = selectedTemplate?.language ?? "en";
     printDocument(htmlToPrint, docLang === "ur");
   };
 

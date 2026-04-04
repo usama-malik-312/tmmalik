@@ -138,14 +138,14 @@ export default function TemplatesPage() {
     if (!editOpen || !editing) return;
     editForm.setFieldsValue({
       name: editing.name,
-      language: editing.language ?? "ur",
+      language: editing.language ?? "en",
       content: editing.content,
       fields: normalizeFields(editing.fields),
     });
   }, [editOpen, editing, editForm]);
 
-  const createLang = Form.useWatch("language", form) || "ur";
-  const editLang = Form.useWatch("language", editForm) || "ur";
+  const createLang = Form.useWatch("language", form) || "en";
+  const editLang = Form.useWatch("language", editForm) || "en";
 
   const createJoditConfig = useMemo(() => ({
     readonly: false,
@@ -210,7 +210,7 @@ export default function TemplatesPage() {
       .filter((f) => f.name && f.label);
     return {
       name: values.name.trim(),
-      language: values.language || "ur",
+      language: values.language || "en",
       content: values.content.normalize("NFC"),
       fields,
     };
@@ -263,7 +263,7 @@ export default function TemplatesPage() {
         <Form
           form={form}
           layout="vertical"
-          initialValues={{ fields: [defaultField()], language: "ur" }}
+          initialValues={{ fields: [defaultField()], language: "en" }}
           onFinish={onFinishCreate}
         >
           <Row gutter={16}>

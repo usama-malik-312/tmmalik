@@ -82,7 +82,7 @@ model Template {
   id        Int      @id @default(autoincrement())
   name      String
   content   String   @db.Text
-  language  String   @default("ur")
+  language  String   @default("en")
   fields    Json
   createdAt DateTime @default(now())
   documents Document[]

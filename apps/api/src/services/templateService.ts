@@ -13,7 +13,7 @@ export const createTemplate = (data: TemplateCreatePayload) =>
     data: {
       name: data.name,
       content: data.content,
-      language: data.language ?? "ur",
+      language: data.language ?? "en",
       fields: data.fields,
     },
   });
