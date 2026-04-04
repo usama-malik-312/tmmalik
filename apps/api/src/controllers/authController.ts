@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import { loginSchema } from "../validators/authValidator.js";
+import { loginSchema, registerSchema } from "../validators/authValidator.js";
 import * as authService from "../services/authService.js";
 import * as userService from "../services/userService.js";
 
@@ -8,6 +8,16 @@ export async function login(req: Request, res: Response, next: NextFunction) {
     const payload = loginSchema.parse(req.body);
     const user = await authService.login(payload.email, payload.password);
     res.json({ success: true, data: user });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function register(req: Request, res: Response, next: NextFunction) {
+  try {
+    const payload = registerSchema.parse(req.body);
+    const entity = await authService.register(payload);
+    res.status(201).json({ success: true, data: entity });
   } catch (error) {
     next(error);
   }
@@ -32,7 +42,7 @@ function stripPassword<T extends { password?: string }>(entity: T) {
 
 export async function meGet(req: Request, res: Response, next: NextFunction) {
   try {
-    const userId = parseUserId(req.headers["x-user-id"] as string | undefined);
+    const userId = req.auth?.userId ?? parseUserId(req.headers["x-user-id"] as string | undefined);
     const user = await userService.getUserById(userId);
     if (!user) {
       res.status(404).json({ success: false, message: "User not found" });
@@ -46,7 +56,7 @@ export async function meGet(req: Request, res: Response, next: NextFunction) {
 
 export async function meUpdate(req: Request, res: Response, next: NextFunction) {
   try {
-    const userId = parseUserId(req.headers["x-user-id"] as string | undefined);
+    const userId = req.auth?.userId ?? parseUserId(req.headers["x-user-id"] as string | undefined);
     const payload = req.body as Partial<{
       fname: string;
       lname: string;

@@ -31,7 +31,7 @@ const SIDER_WIDTH = 100;
 export default function AppShell() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, isOwner, logout } = useAuth();
+  const { user, isAdmin, logout } = useAuth();
   const { t, language, setLanguage, dir } = useI18n();
   const path = location.pathname;
 
@@ -53,7 +53,7 @@ export default function AppShell() {
     formatItem("/documents", <FileTextOutlined />, t("documentGenerator")),
     formatItem("/templates", <FormOutlined />, t("templates")),
     formatItem("/archives", <InboxOutlined />, t("vault")),
-    ...(isOwner ? [formatItem("/users", <UserOutlined />, t("users"))] : []),
+    ...(isAdmin ? [formatItem("/users", <UserOutlined />, t("users"))] : []),
     formatItem("/activity", <HistoryOutlined />, t("activity")),
   ];
 

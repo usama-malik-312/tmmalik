@@ -5,3 +5,11 @@ export const loginSchema = z.object({
   password: z.string().min(6),
 });
 
+export const registerSchema = z.object({
+  name: z.string().min(2),
+  email: z.string().email(),
+  password: z.string().min(6),
+  orgName: z.string().min(2),
+  role: z.enum(["admin", "staff"]).optional().default("staff"),
+});
+

@@ -21,7 +21,7 @@ function Protected({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  const { isOwner } = useAuth();
+  const { isAdmin } = useAuth();
 
   return (
     <Routes>
@@ -39,7 +39,7 @@ export default function App() {
         <Route path="/cases/:id" element={<CaseDetailPage />} />
         <Route path="/documents" element={<DocumentsPage />} />
         <Route path="/templates" element={<TemplatesPage />} />
-        {isOwner ? <Route path="/users" element={<UsersPage />} /> : null}
+        {isAdmin ? <Route path="/users" element={<UsersPage />} /> : null}
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/activity" element={<ActivityPage />} />
         <Route path="/archives" element={<ArchivesPage />} />

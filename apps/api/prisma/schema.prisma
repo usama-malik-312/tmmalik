@@ -22,6 +22,11 @@ enum ActivityEntityType {
   template
 }
 
+enum UserRole {
+  admin
+  staff
+}
+
 model Activity {
   id                String             @id @default(uuid())
   entityType        ActivityEntityType
@@ -110,11 +115,30 @@ model User {
   password  String
   address   String
   userType  Int
+  role      UserRole @default(staff)
   createdAt DateTime @default(now())
 
-  activities Activity[]
+  activities        Activity[]
+  userOrganizations UserOrganization[]
 
   @@map("users")
+}
+
+model Organization {
+  id                Int                @id @default(autoincrement())
+  name              String
+  createdAt         DateTime           @default(now())
+  userOrganizations UserOrganization[]
+}
+
+model UserOrganization {
+  userId Int
+  orgId  Int
+
+  user User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  org  Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@id([userId, orgId])
 }
 
 model Archive {

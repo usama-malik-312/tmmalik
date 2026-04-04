@@ -77,6 +77,8 @@ export interface User {
   email: string;
   address: string;
   userType: -1 | 1 | 2;
+  role?: "admin" | "staff";
+  orgIds?: number[];
   createdAt: string;
 }
 
