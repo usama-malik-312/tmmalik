@@ -32,12 +32,20 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import JoditEditor from "jodit-react";
 import { api, unwrapPaged } from "../api";
-import type { CaseItem, Client, GeneratedDocument, Template, TemplateField } from "../types";
+import type {
+  CaseItem,
+  Client,
+  GeneratedDocument,
+  Template,
+  TemplateField,
+} from "../types";
 
 function parseTemplateFields(raw: unknown): TemplateField[] {
   if (!Array.isArray(raw)) return [];
   return raw
-    .filter((x): x is Record<string, unknown> => x !== null && typeof x === "object")
+    .filter(
+      (x): x is Record<string, unknown> => x !== null && typeof x === "object",
+    )
     .map((x) => ({
       name: String(x.name ?? ""),
       label: String(x.label ?? x.name ?? ""),
@@ -69,11 +77,21 @@ function templateSubtitle(name: string): string {
 }
 
 function sortFields(fields: TemplateField[]): TemplateField[] {
-  const order: Record<string, number> = { client: 0, transaction: 1, general: 2 };
-  return [...fields].sort((a, b) => (order[a.section ?? "general"] ?? 2) - (order[b.section ?? "general"] ?? 2));
+  const order: Record<string, number> = {
+    client: 0,
+    transaction: 1,
+    general: 2,
+  };
+  return [...fields].sort(
+    (a, b) =>
+      (order[a.section ?? "general"] ?? 2) -
+      (order[b.section ?? "general"] ?? 2),
+  );
 }
 
-function groupBySection(fields: TemplateField[]): { section: string; fields: TemplateField[] }[] {
+function groupBySection(
+  fields: TemplateField[],
+): { section: string; fields: TemplateField[] }[] {
   const sorted = sortFields(fields);
   const map = new Map<string, TemplateField[]>();
   for (const f of sorted) {
@@ -81,18 +99,28 @@ function groupBySection(fields: TemplateField[]): { section: string; fields: Tem
     if (!map.has(s)) map.set(s, []);
     map.get(s)!.push(f);
   }
-  return Array.from(map.entries()).map(([section, list]) => ({ section, fields: list }));
+  return Array.from(map.entries()).map(([section, list]) => ({
+    section,
+    fields: list,
+  }));
 }
 
 function formatDayjsLike(raw: unknown): string | null {
   if (raw === null || raw === undefined) return null;
-  if (typeof raw === "object" && raw !== null && typeof (raw as { format?: (f: string) => string }).format === "function") {
+  if (
+    typeof raw === "object" &&
+    raw !== null &&
+    typeof (raw as { format?: (f: string) => string }).format === "function"
+  ) {
     return (raw as { format: (f: string) => string }).format("MM/DD/YYYY");
   }
   return null;
 }
 
-function getPreviewContentHTML(content: string, values: Record<string, string>) {
+function getPreviewContentHTML(
+  content: string,
+  values: Record<string, string>,
+) {
   const re = /\{\{\s*([^}]+?)\s*\}\}/g;
   return content.replace(re, (_, tokenName) => {
     const val = values[tokenName.trim()];
@@ -112,7 +140,9 @@ function escapeHtmlToEditor(text: string): string {
 export default function DocumentsPage() {
   const queryClient = useQueryClient();
   const [form] = Form.useForm();
-  const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(
+    null,
+  );
   const [activeTab, setActiveTab] = useState("generator");
   const [previewScale, setPreviewScale] = useState(1);
   const [draftContent, setDraftContent] = useState<string>("");
@@ -123,31 +153,51 @@ export default function DocumentsPage() {
   const [viewDoc, setViewDoc] = useState<GeneratedDocument | null>(null);
   const [editingDocId, setEditingDocId] = useState<number | null>(null);
   const [feeForm] = Form.useForm<{ amount: number; type: string }>();
-  const [feeResult, setFeeResult] = useState<{ stampDuty: number; cvt: number; total: number } | null>(null);
+  const [feeResult, setFeeResult] = useState<{
+    stampDuty: number;
+    cvt: number;
+    total: number;
+  } | null>(null);
 
   const templatesQuery = useQuery({
     queryKey: ["templates", "docgen"],
     queryFn: async () => {
-      const p = await unwrapPaged<Template>(api.get("/templates", { params: { page: 1, pageSize: 500 } }));
-      return p.items.map((t) => normalizeTemplate(t as Template & { fields?: unknown }));
+      const p = await unwrapPaged<Template>(
+        api.get("/templates", { params: { page: 1, pageSize: 500 } }),
+      );
+      return p.items.map((t) =>
+        normalizeTemplate(t as Template & { fields?: unknown }),
+      );
     },
   });
 
   const clientsQuery = useQuery({
     queryKey: ["clients", "picker"],
-    queryFn: () => unwrapPaged<Client>(api.get("/clients", { params: { page: 1, pageSize: 500 } })),
+    queryFn: () =>
+      unwrapPaged<Client>(
+        api.get("/clients", { params: { page: 1, pageSize: 500 } }),
+      ),
   });
 
   const casesQuery = useQuery({
     queryKey: ["cases", "picker"],
-    queryFn: () => unwrapPaged<CaseItem>(api.get("/cases", { params: { page: 1, pageSize: 500 } })),
+    queryFn: () =>
+      unwrapPaged<CaseItem>(
+        api.get("/cases", { params: { page: 1, pageSize: 500 } }),
+      ),
   });
 
   const documentsQuery = useQuery({
     queryKey: ["documents", "list", docPage, docPageSize, docSearch],
     queryFn: () =>
       unwrapPaged<GeneratedDocument>(
-        api.get("/documents", { params: { page: docPage, pageSize: docPageSize, search: docSearch || undefined } })
+        api.get("/documents", {
+          params: {
+            page: docPage,
+            pageSize: docPageSize,
+            search: docSearch || undefined,
+          },
+        }),
       ),
   });
 
@@ -164,7 +214,9 @@ export default function DocumentsPage() {
       queryClient.invalidateQueries({ queryKey: ["cases"] });
       const cid = variables.caseId;
       if (cid != null && Number.isFinite(Number(cid))) {
-        queryClient.invalidateQueries({ queryKey: ["cases", Number(cid), "activities"] });
+        queryClient.invalidateQueries({
+          queryKey: ["cases", Number(cid), "activities"],
+        });
       }
       message.success("Document generated and saved.");
     },
@@ -175,8 +227,13 @@ export default function DocumentsPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, generatedContent }: { id: number; generatedContent: string }) =>
-      api.put(`/documents/${id}`, { generatedContent }),
+    mutationFn: ({
+      id,
+      generatedContent,
+    }: {
+      id: number;
+      generatedContent: string;
+    }) => api.put(`/documents/${id}`, { generatedContent }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["documents"] });
       queryClient.invalidateQueries({ queryKey: ["activities", "recent"] });
@@ -197,14 +254,18 @@ export default function DocumentsPage() {
   });
 
   const feeMutation = useMutation({
-    mutationFn: (payload: { amount: number; type: string }) => api.post("/automation/fees/calculate", payload),
+    mutationFn: (payload: { amount: number; type: string }) =>
+      api.post("/automation/fees/calculate", payload),
     onSuccess: (res) => {
       setFeeResult(res.data?.data ?? null);
       message.success("Fee breakdown calculated.");
     },
   });
 
-  const templates = useMemo(() => templatesQuery.data ?? [], [templatesQuery.data]);
+  const templates = useMemo(
+    () => templatesQuery.data ?? [],
+    [templatesQuery.data],
+  );
   const filteredTemplates = useMemo(() => {
     const q = templateSearch.trim().toLocaleLowerCase();
     if (!q) return templates;
@@ -212,21 +273,27 @@ export default function DocumentsPage() {
       (t) =>
         t.name.toLocaleLowerCase().includes(q) ||
         t.content.toLocaleLowerCase().includes(q) ||
-        (t.fields ?? []).some((f) => f.label.toLocaleLowerCase().includes(q) || f.name.toLocaleLowerCase().includes(q))
+        (t.fields ?? []).some(
+          (f) =>
+            f.label.toLocaleLowerCase().includes(q) ||
+            f.name.toLocaleLowerCase().includes(q),
+        ),
     );
   }, [templates, templateSearch]);
 
   const effectiveTemplateId = selectedTemplateId ?? templates[0]?.id ?? null;
   const selectedTemplate = useMemo(
     () => templates.find((t) => t.id === effectiveTemplateId) ?? null,
-    [templates, effectiveTemplateId]
+    [templates, effectiveTemplateId],
   );
 
   useEffect(() => {
     form.resetFields();
   }, [selectedTemplateId, form]);
 
-  const watched = Form.useWatch([], form) as Record<string, unknown> | undefined;
+  const watched = Form.useWatch([], form) as
+    | Record<string, unknown>
+    | undefined;
   const previewValues = useMemo(() => {
     const out: Record<string, string> = {};
     if (!selectedTemplate) return out;
@@ -244,7 +311,9 @@ export default function DocumentsPage() {
 
   const handleClientSelect = (clientId: number | null) => {
     if (clientId == null) return;
-    const client = (clientsQuery.data?.items ?? []).find((c) => c.id === clientId);
+    const client = (clientsQuery.data?.items ?? []).find(
+      (c) => c.id === clientId,
+    );
     if (!client) return;
     form.setFieldsValue({
       client_name: client.name,
@@ -269,7 +338,8 @@ export default function DocumentsPage() {
       direction: isRtlText ? ("rtl" as const) : ("ltr" as const),
       language: selectedTemplate?.language ?? "en",
       style: {
-        fontFamily: '"Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", "Noto Naskh Arabic", "Segoe UI", Tahoma, sans-serif',
+        fontFamily:
+          '"Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", "Noto Naskh Arabic", "Segoe UI", Tahoma, sans-serif',
         direction: isRtlText ? "rtl" : "ltr",
         textAlign: isRtlText ? "right" : "left",
         unicodeBidi: "plaintext",
@@ -282,12 +352,14 @@ export default function DocumentsPage() {
           const text = event?.clipboardData?.getData("text/plain");
           if (typeof text !== "string") return;
           event.preventDefault();
-          this?.selection?.insertHTML?.(escapeHtmlToEditor(text.normalize("NFC")));
+          this?.selection?.insertHTML?.(
+            escapeHtmlToEditor(text.normalize("NFC")),
+          );
           return false;
         },
       },
     }),
-    [isRtlText, selectedTemplate?.language]
+    [isRtlText, selectedTemplate?.language],
   );
 
   const printDocument = (content: string, isRtl: boolean = true) => {
@@ -344,14 +416,23 @@ export default function DocumentsPage() {
     for (const f of selectedTemplate.fields) {
       const raw = values[f.name];
       const formatted = formatDayjsLike(raw);
-      formData[f.name] = formatted ?? (raw === undefined || raw === null ? "" : String(raw));
+      formData[f.name] =
+        formatted ?? (raw === undefined || raw === null ? "" : String(raw));
     }
     const linked = values.linkedCaseId;
-    const caseId = linked === undefined || linked === null || linked === "" ? null : Number(linked);
+    const caseId =
+      linked === undefined || linked === null || linked === ""
+        ? null
+        : Number(linked);
     const contentOverride =
-      draftContent.trim() !== selectedTemplate.content.trim() ? draftContent : undefined;
+      draftContent.trim() !== selectedTemplate.content.trim()
+        ? draftContent
+        : undefined;
     if (editingDocId != null) {
-      await updateMutation.mutateAsync({ id: editingDocId, generatedContent: draftContent });
+      await updateMutation.mutateAsync({
+        id: editingDocId,
+        generatedContent: draftContent,
+      });
       setEditingDocId(null);
       return;
     }
@@ -364,7 +445,11 @@ export default function DocumentsPage() {
   };
 
   const handlePrint = () => {
-    const body = (draftContent.trim() || selectedTemplate?.content || "").trim();
+    const body = (
+      draftContent.trim() ||
+      selectedTemplate?.content ||
+      ""
+    ).trim();
     if (!body) {
       message.warning("No document content to print.");
       return;
@@ -397,7 +482,10 @@ export default function DocumentsPage() {
               <Typography.Title level={4} style={{ margin: 0 }}>
                 Create Legal Document
               </Typography.Title>
-              <Typography.Text type="secondary" style={{ fontSize: 13, fontWeight: 400 }}>
+              <Typography.Text
+                type="secondary"
+                style={{ fontSize: 13, fontWeight: 400 }}
+              >
                 Complete the sections below; the preview updates as you type.
               </Typography.Text>
             </div>
@@ -444,13 +532,22 @@ export default function DocumentsPage() {
                     }}
                   >
                     <Space align="start">
-                      <FileTextOutlined style={{ fontSize: 22, color: active ? PRIMARY : "#94a3b8", marginTop: 2 }} />
+                      <FileTextOutlined
+                        style={{
+                          fontSize: 22,
+                          color: active ? PRIMARY : "#94a3b8",
+                          marginTop: 2,
+                        }}
+                      />
                       <div>
                         <Typography.Text strong style={{ display: "block" }}>
                           {t.name}
                         </Typography.Text>
                         {sub ? (
-                          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                          <Typography.Text
+                            type="secondary"
+                            style={{ fontSize: 12 }}
+                          >
                             {sub}
                           </Typography.Text>
                         ) : null}
@@ -463,12 +560,20 @@ export default function DocumentsPage() {
           </Row>
 
           {!selectedTemplate ? (
-            <Typography.Paragraph type="secondary">Loading templates…</Typography.Paragraph>
+            <Typography.Paragraph type="secondary">
+              Loading templates…
+            </Typography.Paragraph>
           ) : (
             <Form form={form} layout="vertical" style={{ marginTop: 24 }}>
-              <Typography.Title level={5}>Document text (optional edits)</Typography.Title>
-              <Typography.Paragraph type="secondary" style={{ marginTop: -8, fontSize: 13 }}>
-                Adjust wording for this run only — the saved template in the library is unchanged. Use the same{" "}
+              <Typography.Title level={5}>
+                Document text (optional edits)
+              </Typography.Title>
+              <Typography.Paragraph
+                type="secondary"
+                style={{ marginTop: -8, fontSize: 13 }}
+              >
+                Adjust wording for this run only — the saved template in the
+                library is unchanged. Use the same{" "}
                 <code>{"{{placeholders}}"}</code> as in the template.
               </Typography.Paragraph>
               <JoditEditor
@@ -480,7 +585,9 @@ export default function DocumentsPage() {
               <Typography.Title level={5} style={{ marginTop: 16 }}>
                 2. {SECTION_LABEL.client}
               </Typography.Title>
-              <Typography.Link style={{ display: "block", marginBottom: 12, color: PRIMARY }}>
+              <Typography.Link
+                style={{ display: "block", marginBottom: 12, color: PRIMARY }}
+              >
                 Find existing client — select below to auto-fill
               </Typography.Link>
               <Form.Item label="Select existing client">
@@ -493,54 +600,79 @@ export default function DocumentsPage() {
                     value: c.id,
                     label: `${c.name} — ${c.cnic}`,
                   }))}
-                  onChange={(v) => handleClientSelect(typeof v === "number" ? v : null)}
+                  onChange={(v) =>
+                    handleClientSelect(typeof v === "number" ? v : null)
+                  }
                 />
               </Form.Item>
-
-              {groupBySection(selectedTemplate.fields.filter((f) => (f.section ?? "general") === "client")).map(
-                ({ fields }) =>
+              <Row gutter={[12, 12]}>
+                {groupBySection(
+                  selectedTemplate.fields.filter(
+                    (f) => (f.section ?? "general") === "client",
+                  ),
+                ).map(({ fields }) =>
                   fields.map((f) => (
-                    <Form.Item
-                      key={f.name}
-                      name={f.name}
-                      label={f.label}
-                      rules={[{ required: true, message: `${f.label} is required` }]}
-                    >
-                      {renderFieldInput(f)}
-                    </Form.Item>
-                  ))
+                    <Col span={12}>
+                      <Form.Item
+                        key={f.name}
+                        name={f.name}
+                        label={f.label}
+                        rules={[
+                          { required: true, message: `${f.label} is required` },
+                        ]}
+                      >
+                        {renderFieldInput(f)}
+                      </Form.Item>
+                    </Col>
+                  )),
+                )}
+              </Row>
+              <Typography.Title level={5}>
+                3. {SECTION_LABEL.transaction}
+              </Typography.Title>
+              {groupBySection(
+                selectedTemplate.fields.filter(
+                  (f) => (f.section ?? "general") === "transaction",
+                ),
+              ).map(({ fields }) =>
+                fields.map((f) => (
+                  <Form.Item
+                    key={f.name}
+                    name={f.name}
+                    label={f.label}
+                    rules={[
+                      { required: true, message: `${f.label} is required` },
+                    ]}
+                  >
+                    {renderFieldInput(f)}
+                  </Form.Item>
+                )),
               )}
 
-              <Typography.Title level={5}>3. {SECTION_LABEL.transaction}</Typography.Title>
-              {groupBySection(selectedTemplate.fields.filter((f) => (f.section ?? "general") === "transaction")).map(
-                ({ fields }) =>
-                  fields.map((f) => (
-                    <Form.Item
-                      key={f.name}
-                      name={f.name}
-                      label={f.label}
-                      rules={[{ required: true, message: `${f.label} is required` }]}
-                    >
-                      {renderFieldInput(f)}
-                    </Form.Item>
-                  ))
-              )}
-
-              {selectedTemplate.fields.some((f) => (f.section ?? "general") === "general") && (
+              {selectedTemplate.fields.some(
+                (f) => (f.section ?? "general") === "general",
+              ) && (
                 <>
-                  <Typography.Title level={5}>{SECTION_LABEL.general}</Typography.Title>
-                  {groupBySection(selectedTemplate.fields.filter((f) => (f.section ?? "general") === "general")).map(
-                    ({ fields }) =>
-                      fields.map((f) => (
-                        <Form.Item
-                          key={f.name}
-                          name={f.name}
-                          label={f.label}
-                          rules={[{ required: true, message: `${f.label} is required` }]}
-                        >
-                          {renderFieldInput(f)}
-                        </Form.Item>
-                      ))
+                  <Typography.Title level={5}>
+                    {SECTION_LABEL.general}
+                  </Typography.Title>
+                  {groupBySection(
+                    selectedTemplate.fields.filter(
+                      (f) => (f.section ?? "general") === "general",
+                    ),
+                  ).map(({ fields }) =>
+                    fields.map((f) => (
+                      <Form.Item
+                        key={f.name}
+                        name={f.name}
+                        label={f.label}
+                        rules={[
+                          { required: true, message: `${f.label} is required` },
+                        ]}
+                      >
+                        {renderFieldInput(f)}
+                      </Form.Item>
+                    )),
                   )}
                 </>
               )}
@@ -562,10 +694,14 @@ export default function DocumentsPage() {
                   size="large"
                   icon={<ThunderboltOutlined />}
                   onClick={handleGenerate}
-                  loading={generateMutation.isPending || updateMutation.isPending}
+                  loading={
+                    generateMutation.isPending || updateMutation.isPending
+                  }
                   style={{ minWidth: 200 }}
                 >
-                  {editingDocId != null ? "Save document changes" : "Generate document"}
+                  {editingDocId != null
+                    ? "Save document changes"
+                    : "Generate document"}
                 </Button>
                 <Button size="large" onClick={resetAll}>
                   Reset form
@@ -582,10 +718,16 @@ export default function DocumentsPage() {
           bordered={false}
           extra={
             <Space wrap className="no-print">
-              <Button size="small" onClick={() => setPreviewScale((s) => Math.min(1.35, s + 0.1))}>
+              <Button
+                size="small"
+                onClick={() => setPreviewScale((s) => Math.min(1.35, s + 0.1))}
+              >
                 +
               </Button>
-              <Button size="small" onClick={() => setPreviewScale((s) => Math.max(0.75, s - 0.1))}>
+              <Button
+                size="small"
+                onClick={() => setPreviewScale((s) => Math.max(0.75, s - 0.1))}
+              >
                 −
               </Button>
               <Button size="small" onClick={handlePrint}>
@@ -644,7 +786,8 @@ export default function DocumentsPage() {
                   padding: "48px 56px",
                   minHeight: 400,
                   boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
-                  fontFamily: '"Jameel Noori Nastaleeq", "Times New Roman", Times, "Noto Nastaliq Urdu", "Noto Naskh Arabic", "Segoe UI", serif',
+                  fontFamily:
+                    '"Jameel Noori Nastaleeq", "Times New Roman", Times, "Noto Nastaliq Urdu", "Noto Naskh Arabic", "Segoe UI", serif',
                   fontSize: 15,
                   lineHeight: 1.65,
                   color: "#1a1a1a",
@@ -665,10 +808,14 @@ export default function DocumentsPage() {
                       overflowX: "hidden",
                       unicodeBidi: "plaintext",
                     }}
-                    dangerouslySetInnerHTML={{ __html: getPreviewContentHTML(previewBody, previewValues) }}
+                    dangerouslySetInnerHTML={{
+                      __html: getPreviewContentHTML(previewBody, previewValues),
+                    }}
                   />
                 ) : (
-                  <Typography.Paragraph type="secondary">Select a template to preview.</Typography.Paragraph>
+                  <Typography.Paragraph type="secondary">
+                    Select a template to preview.
+                  </Typography.Paragraph>
                 )}
               </div>
             </div>
@@ -679,7 +826,9 @@ export default function DocumentsPage() {
   );
 
   const docPaged = documentsQuery.data;
-  const verifyBase = String(api.defaults.baseURL ?? "http://localhost:5000").replace(/\/$/, "");
+  const verifyBase = String(
+    api.defaults.baseURL ?? "http://localhost:5000",
+  ).replace(/\/$/, "");
   const appBase = window.location.origin;
 
   const copyLink = async (url: string) => {
@@ -783,7 +932,11 @@ export default function DocumentsPage() {
         activeKey={activeTab}
         onChange={setActiveTab}
         items={[
-          { key: "generator", label: "Document Generator", children: generator },
+          {
+            key: "generator",
+            label: "Document Generator",
+            children: generator,
+          },
           {
             key: "fee-calculator",
             label: "Fee Calculator",
@@ -791,11 +944,23 @@ export default function DocumentsPage() {
               <Row gutter={[16, 16]}>
                 <Col xs={24} lg={12}>
                   <Card title="Fee Calculator" bordered={false}>
-                    <Form form={feeForm} layout="vertical" initialValues={{ type: "general" }}>
-                      <Form.Item name="amount" label="Amount" rules={[{ required: true }]}>
+                    <Form
+                      form={feeForm}
+                      layout="vertical"
+                      initialValues={{ type: "general" }}
+                    >
+                      <Form.Item
+                        name="amount"
+                        label="Amount"
+                        rules={[{ required: true }]}
+                      >
                         <Input type="number" min={1} step={1} />
                       </Form.Item>
-                      <Form.Item name="type" label="Type" rules={[{ required: true }]}>
+                      <Form.Item
+                        name="type"
+                        label="Type"
+                        rules={[{ required: true }]}
+                      >
                         <Select
                           options={[
                             { value: "general", label: "general" },
@@ -810,7 +975,10 @@ export default function DocumentsPage() {
                         loading={feeMutation.isPending}
                         onClick={async () => {
                           const values = await feeForm.validateFields();
-                          await feeMutation.mutateAsync({ amount: Number(values.amount), type: String(values.type) });
+                          await feeMutation.mutateAsync({
+                            amount: Number(values.amount),
+                            type: String(values.type),
+                          });
                         }}
                       >
                         Calculate
@@ -818,18 +986,28 @@ export default function DocumentsPage() {
                     </Form>
                     {feeResult ? (
                       <div style={{ marginTop: 16 }}>
-                        <Typography.Paragraph style={{ marginBottom: 8 }}>Stamp Duty: {feeResult.stampDuty}</Typography.Paragraph>
-                        <Typography.Paragraph style={{ marginBottom: 8 }}>CVT: {feeResult.cvt}</Typography.Paragraph>
-                        <Typography.Text strong>Total: {feeResult.total}</Typography.Text>
+                        <Typography.Paragraph style={{ marginBottom: 8 }}>
+                          Stamp Duty: {feeResult.stampDuty}
+                        </Typography.Paragraph>
+                        <Typography.Paragraph style={{ marginBottom: 8 }}>
+                          CVT: {feeResult.cvt}
+                        </Typography.Paragraph>
+                        <Typography.Text strong>
+                          Total: {feeResult.total}
+                        </Typography.Text>
                       </div>
                     ) : null}
                   </Card>
                 </Col>
                 <Col xs={24} lg={12}>
                   <Card title="Share Demo" bordered={false}>
-                    <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
-                      For demo, use the Share dropdown in Generated documents. It opens WhatsApp Web with prefilled text
-                      and lets you copy the same link.
+                    <Typography.Paragraph
+                      type="secondary"
+                      style={{ marginBottom: 0 }}
+                    >
+                      For demo, use the Share dropdown in Generated documents.
+                      It opens WhatsApp Web with prefilled text and lets you
+                      copy the same link.
                     </Typography.Paragraph>
                   </Card>
                 </Col>
@@ -878,14 +1056,28 @@ export default function DocumentsPage() {
                     },
                   }}
                   columns={[
-                    { title: "Template", render: (_, r: GeneratedDocument) => r.template?.name ?? "—" },
-                    { title: "Case", render: (_, r: GeneratedDocument) => (r.caseId != null ? `#${r.caseId}` : "—") },
+                    {
+                      title: "Template",
+                      render: (_, r: GeneratedDocument) =>
+                        r.template?.name ?? "—",
+                    },
+                    {
+                      title: "Case",
+                      render: (_, r: GeneratedDocument) =>
+                        r.caseId != null ? `#${r.caseId}` : "—",
+                    },
                     {
                       title: "Preview",
                       render: (_, r: GeneratedDocument) => {
-                        const plainText = r.generatedContent.replace(/<[^>]+>/g, ' ');
+                        const plainText = r.generatedContent.replace(
+                          /<[^>]+>/g,
+                          " ",
+                        );
                         return (
-                          <Typography.Paragraph ellipsis={{ rows: 2 }} style={{ maxWidth: 280, margin: 0 }}>
+                          <Typography.Paragraph
+                            ellipsis={{ rows: 2 }}
+                            style={{ maxWidth: 280, margin: 0 }}
+                          >
                             {plainText}
                           </Typography.Paragraph>
                         );
@@ -993,15 +1185,25 @@ export default function DocumentsPage() {
                                   return;
                                 }
                                 if (key === "verify") {
-                                  window.open(`${verifyBase}/verify/${r.verificationId}`, "_blank", "noopener,noreferrer");
+                                  window.open(
+                                    `${verifyBase}/verify/${r.verificationId}`,
+                                    "_blank",
+                                    "noopener,noreferrer",
+                                  );
                                   return;
                                 }
                                 if (key === "duplicate") {
-                                  void api.post(`/documents/${r.id}/duplicate`).then(() => {
-                                    queryClient.invalidateQueries({ queryKey: ["documents"] });
-                                    queryClient.invalidateQueries({ queryKey: ["activities", "recent"] });
-                                    message.success("Document duplicated.");
-                                  });
+                                  void api
+                                    .post(`/documents/${r.id}/duplicate`)
+                                    .then(() => {
+                                      queryClient.invalidateQueries({
+                                        queryKey: ["documents"],
+                                      });
+                                      queryClient.invalidateQueries({
+                                        queryKey: ["activities", "recent"],
+                                      });
+                                      message.success("Document duplicated.");
+                                    });
                                   return;
                                 }
                                 if (key === "delete") {
@@ -1019,11 +1221,19 @@ export default function DocumentsPage() {
                       title: "Verification",
                       render: (_, r: GeneratedDocument) => (
                         <Space direction="vertical" size={2}>
-                          <Typography.Text code>{r.verificationId}</Typography.Text>
+                          <Typography.Text code>
+                            {r.verificationId}
+                          </Typography.Text>
                           <Button
                             size="small"
                             type="link"
-                            onClick={() => window.open(`${verifyBase}/verify/${r.verificationId}`, "_blank", "noopener,noreferrer")}
+                            onClick={() =>
+                              window.open(
+                                `${verifyBase}/verify/${r.verificationId}`,
+                                "_blank",
+                                "noopener,noreferrer",
+                              )
+                            }
                           >
                             Verify document
                           </Button>
@@ -1032,12 +1242,17 @@ export default function DocumentsPage() {
                     },
                     {
                       title: "Created",
-                      render: (_, r: GeneratedDocument) => new Date(r.createdAt).toLocaleString(),
+                      render: (_, r: GeneratedDocument) =>
+                        new Date(r.createdAt).toLocaleString(),
                     },
                   ]}
                 />
                 <Modal
-                  title={viewDoc ? `Document — ${viewDoc.template?.name ?? "Generated"}` : "Document"}
+                  title={
+                    viewDoc
+                      ? `Document — ${viewDoc.template?.name ?? "Generated"}`
+                      : "Document"
+                  }
                   open={viewDoc != null}
                   footer={null}
                   width={720}
@@ -1045,13 +1260,23 @@ export default function DocumentsPage() {
                   destroyOnClose
                 >
                   {viewDoc ? (
-                    <Space direction="vertical" style={{ width: "100%" }} size="middle">
+                    <Space
+                      direction="vertical"
+                      style={{ width: "100%" }}
+                      size="middle"
+                    >
                       <Space>
-                        <Typography.Text code>{viewDoc.verificationId}</Typography.Text>
+                        <Typography.Text code>
+                          {viewDoc.verificationId}
+                        </Typography.Text>
                         <Button
                           type="link"
                           onClick={() =>
-                            window.open(`${verifyBase}/verify/${viewDoc.verificationId}`, "_blank", "noopener,noreferrer")
+                            window.open(
+                              `${verifyBase}/verify/${viewDoc.verificationId}`,
+                              "_blank",
+                              "noopener,noreferrer",
+                            )
                           }
                         >
                           Verify document
@@ -1061,7 +1286,13 @@ export default function DocumentsPage() {
                         <img
                           src={viewDoc.qrCode}
                           alt="Document verification QR"
-                          style={{ width: 160, height: 160, border: "1px solid #eee", padding: 8, borderRadius: 8 }}
+                          style={{
+                            width: 160,
+                            height: 160,
+                            border: "1px solid #eee",
+                            padding: 8,
+                            borderRadius: 8,
+                          }}
                         />
                       ) : null}
                       <Typography.Paragraph

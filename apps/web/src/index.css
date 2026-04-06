@@ -65,3 +65,11 @@ body {
   background-color: #6366f1 !important;
   color: #fff !important;
 }
+
+
+.ant-form-item{
+  margin-bottom: 12px !important;
+}
+.ant-form-item-vertical .ant-form-item-label{
+  padding-bottom: 0 !important;
+}
