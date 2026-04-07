@@ -682,14 +682,18 @@ export default function DocumentsPage() {
                 ),
               ).map(({ fields }) =>
                 fields.map((f) => (
+                  <Row key={f.name}>
+                  <Col span={6}>
                   <Form.Item
-                    key={f.name}
+                    
                     name={f.name}
                     label={f.label}
                     rules={getFieldRules(f)}
                   >
                     {renderFieldInput(f)}
                   </Form.Item>
+                  </Col>
+                  </Row>
                 )),
               )}
 
@@ -700,12 +704,15 @@ export default function DocumentsPage() {
                   <Typography.Title level={5}>
                     {SECTION_LABEL.general}
                   </Typography.Title>
+                      <Row gutter={[12, 12]}>
+
                   {groupBySection(
                     selectedTemplate.fields.filter(
                       (f) => (f.section ?? "general") === "general",
                     ),
                   ).map(({ fields }) =>
                     fields.map((f) => (
+                         <Col span={12}>
                       <Form.Item
                         key={f.name}
                         name={f.name}
@@ -714,8 +721,10 @@ export default function DocumentsPage() {
                       >
                         {renderFieldInput(f)}
                       </Form.Item>
+                      </Col>
                     )),
                   )}
+                  </Row>
                 </>
               )}
 
