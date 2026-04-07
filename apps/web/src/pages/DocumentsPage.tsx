@@ -32,6 +32,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import JoditEditor from "jodit-react";
 import { api, unwrapPaged } from "../api";
+import CnicInput from "../components/CnicInput";
 import type {
   CaseItem,
   Client,
@@ -42,16 +43,34 @@ import type {
 
 function parseTemplateFields(raw: unknown): TemplateField[] {
   if (!Array.isArray(raw)) return [];
+  const validTypes = ["name", "cnic", "phone", "email", "address", "custom"];
   return raw
     .filter(
       (x): x is Record<string, unknown> => x !== null && typeof x === "object",
     )
-    .map((x) => ({
-      name: String(x.name ?? ""),
-      label: String(x.label ?? x.name ?? ""),
-      section: (x.section as TemplateField["section"]) ?? "general",
-      input: (x.input as TemplateField["input"]) ?? "text",
-    }))
+    .map((x) => {
+      let fType = x.fieldType as string;
+      const fName = String(x.name ?? "").toLowerCase();
+      
+      // Auto-detect legacy field types based on their keys if missing or invalid
+      if (!validTypes.includes(fType)) {
+        if (fName.includes("name")) fType = "name";
+        else if (fName.includes("cnic")) fType = "cnic";
+        else if (fName.includes("phone")) fType = "phone";
+        else if (fName.includes("email")) fType = "email";
+        else if (fName.includes("address")) fType = "address";
+        else fType = "custom";
+      }
+
+      return {
+        name: String(x.name ?? ""),
+        label: String(x.label ?? x.name ?? ""),
+        section: (x.section as TemplateField["section"]) ?? "general",
+        input: (x.input as TemplateField["input"]) ?? "text",
+        fieldType: fType as TemplateField["fieldType"],
+        required: typeof x.required === "boolean" ? x.required : true,
+      };
+    })
     .filter((f) => f.name.length > 0 && f.label.length > 0);
 }
 
@@ -410,7 +429,12 @@ export default function DocumentsPage() {
       return;
     }
     const fieldNames = selectedTemplate.fields.map((f) => f.name);
-    await form.validateFields([...fieldNames, "linkedCaseId"]);
+    try {
+      await form.validateFields([...fieldNames, "linkedCaseId"]);
+    } catch (e) {
+      message.error("Please fill in the required fields correctly.");
+      return;
+    }
     const values = form.getFieldsValue(true) as Record<string, unknown>;
     const formData: Record<string, string> = {};
     for (const f of selectedTemplate.fields) {
@@ -460,13 +484,37 @@ export default function DocumentsPage() {
   };
 
   const renderFieldInput = (f: TemplateField) => {
-    if (f.input === "textarea") {
+    if (f.fieldType === "cnic") {
+      return <CnicInput placeholder="11111-1111111-1" />;
+    }
+    if (f.fieldType === "address" || f.input === "textarea") {
       return <Input.TextArea rows={4} placeholder={f.label} dir="auto" />;
     }
     if (f.input === "date") {
       return <DatePicker style={{ width: "100%" }} format="MM/DD/YYYY" />;
     }
     return <Input placeholder={f.label} dir="auto" />;
+  };
+
+  const getFieldRules = (f: TemplateField) => {
+    const rules: any[] = [];
+    if (f.required !== false) {
+      rules.push({ required: true, message: `${f.label} is required` });
+    }
+    if (f.fieldType === "name") {
+      rules.push({ pattern: /^[A-Za-z\s]+$/, message: "Only letters allowed" });
+      rules.push({ min: 2, message: "Minimum 2 characters required" });
+    } else if (f.fieldType === "cnic") {
+      rules.push({ pattern: /^\d{5}-\d{7}-\d$/, message: "Valid CNIC format required (11111-1111111-1)" });
+    } else if (f.fieldType === "email") {
+      rules.push({ type: "email", message: "Invalid email address" });
+    } else if (f.fieldType === "phone") {
+      rules.push({ pattern: /^[\+\d\s\-\(\)]+$/, message: "Invalid phone format" });
+      rules.push({ min: 7, message: "Too short for a phone number" });
+    } else if (f.fieldType === "address") {
+      rules.push({ min: 5, message: "Address must be at least 5 characters" });
+    }
+    return rules;
   };
 
   const previewBody = draftContent || selectedTemplate?.content || "";
@@ -617,9 +665,7 @@ export default function DocumentsPage() {
                         key={f.name}
                         name={f.name}
                         label={f.label}
-                        rules={[
-                          { required: true, message: `${f.label} is required` },
-                        ]}
+                        rules={getFieldRules(f)}
                       >
                         {renderFieldInput(f)}
                       </Form.Item>
@@ -640,9 +686,7 @@ export default function DocumentsPage() {
                     key={f.name}
                     name={f.name}
                     label={f.label}
-                    rules={[
-                      { required: true, message: `${f.label} is required` },
-                    ]}
+                    rules={getFieldRules(f)}
                   >
                     {renderFieldInput(f)}
                   </Form.Item>
@@ -666,9 +710,7 @@ export default function DocumentsPage() {
                         key={f.name}
                         name={f.name}
                         label={f.label}
-                        rules={[
-                          { required: true, message: `${f.label} is required` },
-                        ]}
+                        rules={getFieldRules(f)}
                       >
                         {renderFieldInput(f)}
                       </Form.Item>

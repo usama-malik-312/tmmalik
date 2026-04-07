@@ -41,12 +41,15 @@ export interface CaseItem {
 
 export type TemplateFieldSection = "client" | "transaction" | "general";
 export type TemplateFieldInput = "text" | "textarea" | "date";
+export type TemplateFieldType = "name" | "cnic" | "phone" | "email" | "address" | "custom";
 
 export interface TemplateField {
   name: string;
   label: string;
   section?: TemplateFieldSection;
   input?: TemplateFieldInput;
+  fieldType?: TemplateFieldType;
+  required?: boolean;
 }
 
 export interface Template {

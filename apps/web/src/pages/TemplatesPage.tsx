@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Button,
   Card,
+  Checkbox,
   Form,
   Input,
   Modal,
@@ -32,8 +33,8 @@ type FormValues = {
 const defaultField = (): TemplateField => ({
   name: "",
   label: "",
-  section: "client",
-  input: "text",
+  fieldType: "name",
+  required: true,
 });
 
 function normalizeFields(raw: unknown): TemplateField[] {
@@ -45,8 +46,8 @@ function normalizeFields(raw: unknown): TemplateField[] {
     .map((x) => ({
       name: String(x.name ?? ""),
       label: String(x.label ?? ""),
-      section: (x.section as TemplateField["section"]) ?? "client",
-      input: (x.input as TemplateField["input"]) ?? "text",
+      fieldType: (x.fieldType as TemplateField["fieldType"]) ?? "name",
+      required: typeof x.required === "boolean" ? x.required : true,
     }))
     .filter((f) => f.name && f.label);
   return list.length ? list : [defaultField()];
@@ -204,8 +205,8 @@ export default function TemplatesPage() {
       .map((f) => ({
         name: f.name.trim(),
         label: f.label.trim(),
-        section: f.section ?? "general",
-        input: f.input ?? "text",
+        fieldType: f.fieldType ?? "name",
+        required: typeof f.required === "boolean" ? f.required : true,
       }))
       .filter((f) => f.name && f.label);
     return {
@@ -338,7 +339,7 @@ export default function TemplatesPage() {
                           style={{ width: 200 }}
                         />
                       </Form.Item>
-                      <Form.Item
+                      {/* <Form.Item
                         {...restField}
                         name={[name, "section"]}
                         label="Section"
@@ -352,21 +353,32 @@ export default function TemplatesPage() {
                             { value: "general", label: "General" },
                           ]}
                         />
-                      </Form.Item>
+                      </Form.Item> */}
                       <Form.Item
                         {...restField}
-                        name={[name, "input"]}
-                        label="Input"
-                        initialValue="text"
+                        name={[name, "fieldType"]}
+                        label="Type"
+                        initialValue="name"
                       >
                         <Select
                           style={{ width: 120 }}
                           options={[
-                            { value: "text", label: "Text" },
-                            { value: "textarea", label: "Text area" },
-                            { value: "date", label: "Date" },
+                            { value: "name", label: "Name" },
+                            { value: "phone", label: "Phone" },
+                            { value: "email", label: "Email" },
+                            { value: "address", label: "Address" },
+                            { value: "cnic", label: "CNIC" },
+                            { value: "custom", label: "Custom" },
                           ]}
                         />
+                      </Form.Item>
+                      <Form.Item
+                        {...restField}
+                        name={[name, "required"]}
+                        valuePropName="checked"
+                        initialValue={true}
+                      >
+                        <Checkbox>Mandatory</Checkbox>
                       </Form.Item>
                       <Form.Item label=" ">
                         <Button
@@ -381,14 +393,28 @@ export default function TemplatesPage() {
                     </Space>
                   </Card>
                 ))}
-                <Button
-                  type="dashed"
-                  onClick={() => add(defaultField())}
-                  block
-                  icon={<PlusOutlined />}
-                >
-                  Add field
-                </Button>
+                <Space style={{ width: "100%" }} direction="vertical" size={12}>
+                  <Button
+                    type="dashed"
+                    onClick={() => add(defaultField())}
+                    block
+                    icon={<PlusOutlined />}
+                  >
+                    Add field
+                  </Button>
+                  <Button
+                    type="dashed"
+                    onClick={() => {
+                      add({ name: "name", label: "Full Name", fieldType: "name", required: true });
+                      add({ name: "cnic", label: "CNIC Number", fieldType: "cnic", required: true });
+                      add({ name: "address", label: "Address", fieldType: "address", required: true });
+                      add({ name: "phone", label: "Phone Number", fieldType: "phone", required: true });
+                    }}
+                    block
+                  >
+                    Quickly add standard User Info fields (Name, CNIC, Address, Phone)
+                  </Button>
+                </Space>
               </>
             )}
           </Form.List>
@@ -583,7 +609,7 @@ export default function TemplatesPage() {
                       >
                         <Input style={{ width: 180 }} />
                       </Form.Item>
-                      <Form.Item
+                      {/* <Form.Item
                         {...restField}
                         name={[name, "section"]}
                         label="Section"
@@ -596,20 +622,32 @@ export default function TemplatesPage() {
                             { value: "general", label: "General" },
                           ]}
                         />
-                      </Form.Item>
+                      </Form.Item> */}
                       <Form.Item
                         {...restField}
-                        name={[name, "input"]}
-                        label="Input"
+                        name={[name, "fieldType"]}
+                        label="Type"
+                        initialValue="name"
                       >
                         <Select
                           style={{ width: 100 }}
                           options={[
-                            { value: "text", label: "Text" },
-                            { value: "textarea", label: "Area" },
-                            { value: "date", label: "Date" },
+                            { value: "name", label: "Name" },
+                            { value: "phone", label: "Phone" },
+                            { value: "email", label: "Email" },
+                            { value: "address", label: "Address" },
+                            { value: "cnic", label: "CNIC" },
+                            { value: "custom", label: "Custom" },
                           ]}
                         />
+                      </Form.Item>
+                      <Form.Item
+                        {...restField}
+                        name={[name, "required"]}
+                        valuePropName="checked"
+                        initialValue={true}
+                      >
+                        <Checkbox>Mandatory</Checkbox>
                       </Form.Item>
                       <Button
                         danger
@@ -622,14 +660,28 @@ export default function TemplatesPage() {
                     </Space>
                   </Card>
                 ))}
-                <Button
-                  type="dashed"
-                  onClick={() => add(defaultField())}
-                  block
-                  icon={<PlusOutlined />}
-                >
-                  Add field
-                </Button>
+                <Space style={{ width: "100%" }} direction="vertical" size={12}>
+                  <Button
+                    type="dashed"
+                    onClick={() => add(defaultField())}
+                    block
+                    icon={<PlusOutlined />}
+                  >
+                    Add field
+                  </Button>
+                  <Button
+                    type="dashed"
+                    onClick={() => {
+                      add({ name: "name", label: "Full Name", fieldType: "name", required: true });
+                      add({ name: "cnic", label: "CNIC Number", fieldType: "cnic", required: true });
+                      add({ name: "address", label: "Address", fieldType: "address", required: true });
+                      add({ name: "phone", label: "Phone Number", fieldType: "phone", required: true });
+                    }}
+                    block
+                  >
+                    Quickly add standard User Info fields (Name, CNIC, Address, Phone)
+                  </Button>
+                </Space>
               </>
             )}
           </Form.List>
