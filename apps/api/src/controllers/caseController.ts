@@ -13,18 +13,29 @@ function parseId(value: string | string[] | undefined): number {
   return id;
 }
 
-export async function createCase(req: Request, res: Response, next: NextFunction) {
+export async function createCase(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     const payload = caseSchema.parse(req.body);
     const actor = await resolveActorFromRequest(req);
-    const entity = await service.createCase(payload, actor);
+    const entity = await service.createCase(
+      { ...payload, notes: payload.notes ?? "" },
+      actor,
+    );
     res.status(201).json({ success: true, data: entity });
   } catch (error) {
     next(error);
   }
 }
 
-export async function getCases(req: Request, res: Response, next: NextFunction) {
+export async function getCases(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     const { page, pageSize, skip, search } = parseListQuery(req);
     const status = optionalQueryString(req, "status");
@@ -45,7 +56,11 @@ export async function getCases(req: Request, res: Response, next: NextFunction) 
   }
 }
 
-export async function getCaseById(req: Request, res: Response, next: NextFunction) {
+export async function getCaseById(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     const entity = await service.getCaseById(parseId(req.params.id));
     if (!entity) {
@@ -58,7 +73,11 @@ export async function getCaseById(req: Request, res: Response, next: NextFunctio
   }
 }
 
-export async function updateCase(req: Request, res: Response, next: NextFunction) {
+export async function updateCase(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     const id = parseId(req.params.id);
     const before = await service.getCaseById(id);
@@ -70,7 +89,12 @@ export async function updateCase(req: Request, res: Response, next: NextFunction
     const actor = await resolveActorFromRequest(req);
     const entity = await service.updateCase(id, payload);
     if (payload.status !== undefined && payload.status !== before.status) {
-      await activityService.logCaseStatusChanged(id, before.status, entity.status, actor);
+      await activityService.logCaseStatusChanged(
+        id,
+        before.status,
+        entity.status,
+        actor,
+      );
     }
     res.json({ success: true, data: entity });
   } catch (error) {
@@ -78,7 +102,11 @@ export async function updateCase(req: Request, res: Response, next: NextFunction
   }
 }
 
-export async function getCaseActivities(req: Request, res: Response, next: NextFunction) {
+export async function getCaseActivities(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     const id = parseId(req.params.id);
     const c = await service.getCaseById(id);
